@@ -2,16 +2,17 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: string;
+  avatar: string;
   role: "Administrator" | "Employee";
-  company?: string;
+  company: string;
 }
 
 export interface Product {
   id: string;
   name: string;
-  category: string;
   image: string;
+  sampleImage?: string; // Design template image
+  category: string;
   createdAt: Date;
 }
 
@@ -21,8 +22,12 @@ export interface InspectionResult {
   status: "Passed" | "Error";
   timestamp: Date;
   aiAnalysis?: string;
+  confidence?: number;
   differences?: string[];
   testImageUrl?: string;
+  testImage?: string; // For backward compatibility
+  standardImage?: string;
+  inspector?: string;
 }
 
 export interface DashboardStats {

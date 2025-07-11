@@ -11,7 +11,9 @@ import {
   FileImage,
   Zap,
   Eye,
-  Menu
+  Menu,
+  X,
+  ZoomIn
 } from 'lucide-react';
 import { mockProducts, mockInspections } from '../data/mockData';
 
@@ -19,11 +21,132 @@ interface ProductDetailScreenProps {
   onToggleSidebar: () => void;
 }
 
+interface InspectionDetailModalProps {
+  inspection: any;
+  onClose: () => void;
+}
+
+const InspectionDetailModal: React.FC<InspectionDetailModalProps> = ({ inspection, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Chi tiết kiểm tra</h2>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-6 space-y-6">
+          {/* Inspection Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm text-gray-500">Thời gian kiểm tra:</span>
+                <p className="font-medium text-gray-900">
+                  {inspection.timestamp.toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">Kết quả:</span>
+                <div className="flex items-center space-x-2 mt-1">
+                  {inspection.status === 'Passed' ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  )}
+                  <span className={`font-medium ${inspection.status === 'Passed' ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                    {inspection.status === 'Passed' ? 'Thành công' : 'Có lỗi'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">Độ tin cậy:</span>
+                <p className="font-medium text-gray-900">{inspection.confidence}%</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm text-gray-500">Người thực hiện:</span>
+                <p className="font-medium text-gray-900">{inspection.inspector || 'Hệ thống AI'}</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">ID kiểm tra:</span>
+                <p className="font-mono text-sm text-gray-600">{inspection.id}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Analysis */}
+          {inspection.aiAnalysis && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-2">Phân tích AI:</h3>
+              <p className="text-sm text-gray-700">{inspection.aiAnalysis}</p>
+            </div>
+          )}
+
+          {/* Differences */}
+          {inspection.differences && inspection.differences.length > 0 && (
+            <div>
+              <h3 className="font-medium text-gray-900 mb-3">Các khác biệt phát hiện:</h3>
+              <div className="space-y-2">
+                {inspection.differences.map((diff: string, index: number) => (
+                  <div key={index} className="flex items-start space-x-2 p-3 bg-red-50 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-red-800">{diff}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Images Comparison */}
+          <div>
+            <h3 className="font-medium text-gray-900 mb-3">So sánh hình ảnh:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Ảnh mẫu chuẩn:</p>
+                <img
+                  src={inspection.standardImage || 'https://placehold.co/400x300'}
+                  alt="Ảnh mẫu chuẩn"
+                  className="w-full h-48 object-cover rounded-lg border"
+                />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Ảnh kiểm tra:</p>
+                <img
+                  src={inspection.testImageUrl || inspection.testImage || 'https://placehold.co/400x300'}
+                  alt="Ảnh kiểm tra"
+                  className="w-full h-48 object-cover rounded-lg border"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSidebar }) => {
   const { id } = useParams<{ id: string }>();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [selectedInspection, setSelectedInspection] = useState<any>(null);
 
   const product = mockProducts.find(p => p.id === id);
   const inspections = mockInspections.filter(i => i.productId === id);
@@ -84,7 +207,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
     <div className="w-full min-h-full">
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
         {/* Mobile Header with Hamburger and Back */}
-        <div className="flex items-center justify-between mb-6 sm:hidden">
+        <div className="flex items-center justify-between mb-6 bg-white sticky top-0 z-10 sm:hidden">
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggleSidebar}
@@ -100,59 +223,66 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
             </Link>
           </div>
           <h1 className="text-lg font-bold text-gray-900 truncate">{product.name}</h1>
-          <div className="w-10"></div> {/* Spacer for balance */}
+          <div className="w-10"></div>
         </div>
 
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="hidden sm:flex items-center space-x-4 mb-4">
-            <Link
-              to="/products"
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </Link>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{product.name}</h1>
-              <p className="text-gray-600 text-sm sm:text-base">Chi tiết sản phẩm và kiểm tra AI</p>
-            </div>
+        {/* Desktop Header */}
+        <div className="hidden sm:flex items-center space-x-4 mb-6">
+          <Link
+            to="/products"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{product.name}</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Chi tiết sản phẩm và kiểm tra AI</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          {/* Left Column - Image Upload & Analysis */}
-          <div className="space-y-4 sm:space-y-6">
-            {/* Standard Image */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8 mb-8">
+          {/* Left Column - Product Images */}
+          <div className="xl:col-span-2 space-y-4 sm:space-y-6">
+            {/* Three Images Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Ảnh mẫu chuẩn</h3>
-              <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                <img
-                  src={product.image}
-                  alt={`${product.name} - Mẫu chuẩn`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Hình ảnh sản phẩm</h3>
 
-            {/* Upload Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Ảnh cần so sánh</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                {/* Representative Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Ảnh đại diện</label>
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                    <img
+                      src={product.image}
+                      alt={`${product.name} - Ảnh đại diện`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
 
-              {!uploadedImage ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 text-center hover:border-gray-400 transition-colors duration-200">
-                  <div className="space-y-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto">
-                      <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-900 font-medium text-sm sm:text-base">Tải lên ảnh thực tế</p>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        Kéo thả file hoặc click để chọn
-                      </p>
-                    </div>
-                    <div className="flex justify-center space-x-4">
-                      <label className="btn-primary cursor-pointer text-sm">
-                        <Camera className="w-4 h-4 mr-2" />
+                {/* Sample Design Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Ảnh mẫu thiết kế</label>
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                    <img
+                      src={product.sampleImage || product.image}
+                      alt={`${product.name} - Mẫu thiết kế`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Printed Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Ảnh in thực tế</label>
+                  {!uploadedImage ? (
+                    <div className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-gray-400 transition-colors duration-200">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mb-2">
+                        <Upload className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <p className="text-xs font-medium text-gray-900 mb-1 text-center">Tải lên ảnh in</p>
+                      <label className="btn-primary cursor-pointer text-xs px-3 py-2 flex items-center justify-center">
+                        <Camera className="w-3 h-3 mr-1" />
                         Chọn ảnh
                         <input
                           type="file"
@@ -162,28 +292,26 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
                         />
                       </label>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                      <img
+                        src={uploadedImage}
+                        alt="Ảnh in thực tế"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => {
+                          setUploadedImage(null);
+                          setAnalysisResult(null);
+                        }}
+                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                    <img
-                      src={uploadedImage}
-                      alt="Ảnh kiểm tra"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <button
-                    onClick={() => {
-                      setUploadedImage(null);
-                      setAnalysisResult(null);
-                    }}
-                    className="btn-secondary w-full"
-                  >
-                    Thay đổi ảnh
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
 
             {/* AI Analysis Result */}
@@ -205,8 +333,8 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
                 ) : analysisResult && (
                   <div className="space-y-4">
                     <div className={`p-4 rounded-lg ${analysisResult.status === 'Passed'
-                        ? 'bg-green-50 border border-green-200'
-                        : 'bg-red-50 border border-red-200'
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
                       }`}>
                       <div className="flex items-center space-x-2 mb-2">
                         {analysisResult.status === 'Passed' ? (
@@ -257,50 +385,49 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
                   {inspections.map((inspection) => (
                     <div
                       key={inspection.id}
-                      className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors duration-150"
+                      onClick={() => setSelectedInspection(inspection)}
+                      className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 space-y-2 sm:space-y-0">
-                        <div className="flex items-center space-x-2">
-                          {inspection.status === 'Passed' ? (
-                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                          ) : (
-                            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
-                          )}
-                          <span className={`font-medium text-sm sm:text-base ${inspection.status === 'Passed' ? 'text-green-800' : 'text-red-800'
-                            }`}>
-                            {inspection.status === 'Passed' ? 'Thành công' : 'Có lỗi'}
-                          </span>
+                      <div className="flex items-start space-x-3">
+                        {/* Inspection Image */}
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img
+                            src={inspection.testImageUrl || inspection.testImage || 'https://placehold.co/100x100'}
+                            alt="Ảnh kiểm tra"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500">
-                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span>{formatDate(inspection.timestamp)}</span>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            {inspection.status === 'Passed' ? (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <AlertTriangle className="w-4 h-4 text-red-600" />
+                            )}
+                            <span className={`font-medium text-sm ${inspection.status === 'Passed' ? 'text-green-800' : 'text-red-800'
+                              }`}>
+                              {inspection.status === 'Passed' ? 'Thành công' : 'Có lỗi'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-1 text-xs text-gray-500 mb-2">
+                            <Clock className="w-3 h-3" />
+                            <span>{formatDate(inspection.timestamp)}</span>
+                          </div>
+
+                          {inspection.aiAnalysis && (
+                            <p className="text-xs text-gray-700 line-clamp-2">
+                              {inspection.aiAnalysis}
+                            </p>
+                          )}
+
+                          <div className="flex items-center space-x-1 text-primary-600 hover:text-primary-700 mt-2">
+                            <ZoomIn className="w-3 h-3" />
+                            <span className="text-xs font-medium">Xem chi tiết</span>
+                          </div>
                         </div>
                       </div>
-
-                      {inspection.aiAnalysis && (
-                        <p className="text-xs sm:text-sm text-gray-700 mb-2">
-                          {inspection.aiAnalysis}
-                        </p>
-                      )}
-
-                      {inspection.differences && inspection.differences.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-xs text-gray-500 mb-1">Khác biệt phát hiện:</p>
-                          <ul className="space-y-1">
-                            {inspection.differences.map((diff, index) => (
-                              <li key={index} className="text-xs text-red-600 flex items-start space-x-1">
-                                <span>•</span>
-                                <span>{diff}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <button className="mt-2 text-xs text-primary-600 hover:text-primary-700 flex items-center space-x-1">
-                        <Eye className="w-3 h-3" />
-                        <span>Xem chi tiết</span>
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -342,6 +469,14 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
           </div>
         </div>
       </div>
+
+      {/* Inspection Detail Modal */}
+      {selectedInspection && (
+        <InspectionDetailModal
+          inspection={selectedInspection}
+          onClose={() => setSelectedInspection(null)}
+        />
+      )}
     </div>
   );
 };

@@ -29,7 +29,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
     <div className="w-full min-h-full">
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
         {/* Mobile Header with Hamburger */}
-        <div className="flex items-center justify-between mb-6 sm:hidden">
+        <div className="flex items-center justify-between mb-6 bg-white sticky top-0 z-10 sm:hidden">
           <button
             onClick={onToggleSidebar}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
@@ -50,10 +50,13 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
               </p>
             </div>
 
-            <button className="btn-primary flex items-center space-x-2 animate-bounce-in w-full sm:w-auto justify-center">
+            <Link
+              to="/products/add"
+              className="btn-primary flex items-center space-x-2 animate-bounce-in w-full sm:w-auto justify-center"
+            >
               <Plus className="w-5 h-5" />
               <span>Thêm sản phẩm</span>
-            </button>
+            </Link>
           </div>
 
           {/* Search and Filter */}

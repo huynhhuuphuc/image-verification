@@ -7,6 +7,7 @@ import { User } from './types';
 import HomeScreen from './screens/HomeScreen';
 import ProductListScreen from './screens/ProductListScreen';
 import ProductDetailScreen from './screens/ProductDetailScreen';
+import AddProductScreen from './screens/AddProductScreen';
 import EmployeeManagementScreen from './screens/EmployeeManagementScreen';
 
 function App() {
@@ -125,6 +126,7 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<HomeScreen user={currentUser} onToggleSidebar={toggleSidebar} />} />
             <Route path="/products" element={<ProductListScreen onToggleSidebar={toggleSidebar} />} />
+            <Route path="/products/add" element={<AddProductScreen onToggleSidebar={toggleSidebar} />} />
             <Route path="/products/:id" element={<ProductDetailScreen onToggleSidebar={toggleSidebar} />} />
             <Route path="/employees" element={<EmployeeManagementScreen onToggleSidebar={toggleSidebar} />} />
           </Routes>

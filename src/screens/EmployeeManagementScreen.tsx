@@ -42,7 +42,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({ onT
     <div className="w-full min-h-full">
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
         {/* Mobile Header with Hamburger */}
-        <div className="flex items-center justify-between mb-6 sm:hidden">
+        <div className="flex items-center justify-between mb-6 bg-white sticky top-0 z-10 sm:hidden">
           <button
             onClick={onToggleSidebar}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
@@ -95,8 +95,8 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({ onT
                 key={role}
                 onClick={() => setSelectedRole(role)}
                 className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${selectedRole === role
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  ? 'bg-primary-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
               >
                 {role === 'All' ? 'Tất cả' : role === 'Administrator' ? 'Quản trị viên' : 'Nhân viên'}

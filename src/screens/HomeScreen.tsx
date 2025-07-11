@@ -58,7 +58,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ user, onToggleSidebar }) => {
     <div className="w-full min-h-full">
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
         {/* Mobile Header with Hamburger */}
-        <div className="flex items-center justify-between mb-6 sm:hidden">
+        <div className="flex items-center justify-between mb-6 bg-white sticky top-0 z-10 sm:hidden">
           <button
             onClick={onToggleSidebar}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"

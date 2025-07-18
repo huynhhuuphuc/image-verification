@@ -187,9 +187,10 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className={`input-field ${errors.category ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
+                  className={`w-full h-[46px] rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+      ${errors.category ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
                 >
-                  <option value="" className=''>Chọn danh mục...</option>
+                  <option value="">Chọn danh mục...</option>
                   {availableCategories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}

@@ -79,20 +79,23 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
           </div>
 
           {/* Category Filter */}
-          <div className="flex flex-wrap gap-2">
-            {mockCategories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${selectedCategory === category.id
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-              >
-                {category.name} ({category.count})
-              </button>
-            ))}
+          <div className="w-full overflow-x-auto">
+            <div className="inline-flex gap-2 pb-2 min-w-max">
+              {mockCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 ${selectedCategory === category.id
+                      ? 'bg-primary-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                >
+                  {category.name} ({category.count})
+                </button>
+              ))}
+            </div>
           </div>
+
         </div>
 
         {/* Product Grid */}
@@ -169,7 +172,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
         )}
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -205,7 +208,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

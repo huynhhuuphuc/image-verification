@@ -16,6 +16,7 @@ import {
   ZoomIn
 } from 'lucide-react';
 import { mockProducts, mockInspections } from '../data/mockData';
+import PreviewModal from '../components/PreviewModal';
 
 interface ProductDetailScreenProps {
   onToggleSidebar: () => void;
@@ -27,6 +28,8 @@ interface InspectionDetailModalProps {
 }
 
 const InspectionDetailModal: React.FC<InspectionDetailModalProps> = ({ inspection, onClose }) => {
+  const [previewImage, setPreviewImage] = useState<{ url: string, alt: string } | null>(null);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -119,24 +122,71 @@ const InspectionDetailModal: React.FC<InspectionDetailModalProps> = ({ inspectio
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600 mb-2">Ảnh mẫu chuẩn:</p>
-                <img
-                  src={inspection.standardImage || 'https://placehold.co/400x300'}
-                  alt="Ảnh mẫu chuẩn"
-                  className="w-full h-48 object-cover rounded-lg border"
-                />
+                <div className="relative group">
+                  <img
+                    src={inspection.standardImage || 'https://placehold.co/400x300'}
+                    alt="Ảnh mẫu chuẩn"
+                    className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:brightness-110 transition-all duration-200"
+                    onClick={() => setPreviewImage({
+                      url: inspection.standardImage || 'https://placehold.co/400x300',
+                      alt: 'Ảnh mẫu chuẩn'
+                    })}
+                  />
+                  <div
+                    className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPreviewImage({
+                        url: inspection.standardImage || 'https://placehold.co/400x300',
+                        alt: 'Ảnh mẫu chuẩn'
+                      });
+                    }}
+                  >
+                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer" />
+                  </div>
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-600 mb-2">Ảnh kiểm tra:</p>
-                <img
-                  src={inspection.testImageUrl || inspection.testImage || 'https://placehold.co/400x300'}
-                  alt="Ảnh kiểm tra"
-                  className="w-full h-48 object-cover rounded-lg border"
-                />
+                <div className="relative group">
+                  <img
+                    src={inspection.testImageUrl || inspection.testImage || 'https://placehold.co/400x300'}
+                    alt="Ảnh kiểm tra"
+                    className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:brightness-110 transition-all duration-200"
+                    onClick={() => setPreviewImage({
+                      url: inspection.testImageUrl || inspection.testImage || 'https://placehold.co/400x300',
+                      alt: 'Ảnh kiểm tra'
+                    })}
+                  />
+                  <div
+                    className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPreviewImage({
+                        url: inspection.testImageUrl || inspection.testImage || 'https://placehold.co/400x300',
+                        alt: 'Ảnh kiểm tra'
+                      });
+                    }}
+                  >
+                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <PreviewModal
+          imageUrl={previewImage.url}
+          imageAlt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   );
 };
@@ -147,6 +197,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [selectedInspection, setSelectedInspection] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string, alt: string } | null>(null);
 
   const product = mockProducts.find(p => p.id === id);
   const inspections = mockInspections.filter(i => i.productId === id);
@@ -251,24 +302,58 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
                 {/* Representative Image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">Ảnh đại diện</label>
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                  <div className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border">
                     <img
                       src={product.image}
                       alt={`${product.name} - Ảnh đại diện`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                      onClick={() => setPreviewImage({
+                        url: product.image,
+                        alt: `${product.name} - Ảnh đại diện`
+                      })}
                     />
+                    <div
+                      className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPreviewImage({
+                          url: product.image,
+                          alt: product.name
+                        });
+                      }}
+                    >
+                      <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer" />
+                    </div>
                   </div>
                 </div>
 
                 {/* Sample Design Image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">Ảnh mẫu thiết kế</label>
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                  <div className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border">
                     <img
                       src={product.sampleImage || product.image}
                       alt={`${product.name} - Mẫu thiết kế`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                      onClick={() => setPreviewImage({
+                        url: product.sampleImage || product.image,
+                        alt: `${product.name} - Mẫu thiết kế`
+                      })}
                     />
+                    <div
+                      className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPreviewImage({
+                          url: product.sampleImage || product.image,
+                          alt: `${product.name} - Mẫu thiết kế`
+                        });
+                      }}
+                    >
+                      <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer" />
+                    </div>
                   </div>
                 </div>
 
@@ -293,18 +378,36 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
                       </label>
                     </div>
                   ) : (
-                    <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                    <div className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border">
                       <img
                         src={uploadedImage}
                         alt="Ảnh in thực tế"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                        onClick={() => setPreviewImage({
+                          url: uploadedImage,
+                          alt: 'Ảnh in thực tế'
+                        })}
                       />
+                      <div
+                        className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setPreviewImage({
+                            url: uploadedImage,
+                            alt: 'Ảnh in thực tế'
+                          });
+                        }}
+                      >
+                        <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer" />
+                      </div>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setUploadedImage(null);
                           setAnalysisResult(null);
                         }}
-                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200 z-10"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -475,6 +578,15 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ onToggleSideb
         <InspectionDetailModal
           inspection={selectedInspection}
           onClose={() => setSelectedInspection(null)}
+        />
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <PreviewModal
+          imageUrl={previewImage.url}
+          imageAlt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
         />
       )}
     </div>

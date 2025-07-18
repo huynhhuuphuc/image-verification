@@ -37,6 +37,8 @@ export const mockProducts: Product[] = [
     category: "fresh-porridge",
     image:
       "https://images.unsplash.com/photo-1565299507177-b0ac66763828?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80",
+    sampleImage:
+      "https://nhsv.vn/uploadfile/source/Marketing%20material/something-landing-page/anh%20mau.jpg",
     createdAt: new Date("2024-01-15"),
   },
   {
@@ -89,6 +91,10 @@ export const mockInspections: InspectionResult[] = [
     timestamp: new Date("2024-01-30T10:30:00"),
     aiAnalysis:
       "Nhãn mác khớp hoàn toàn với mẫu thiết kế. Không phát hiện lỗi.",
+    testImage:
+      "https://nhsv.vn/uploadfile/source/Marketing%20material/something-landing-page/anh%20mau.jpg",
+    standardImage:
+      "https://nhsv.vn/uploadfile/source/Marketing%20material/something-landing-page/anh%20mau.jpg",
   },
   {
     id: "2",

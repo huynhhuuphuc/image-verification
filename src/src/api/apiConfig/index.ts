@@ -8,6 +8,7 @@ import axios, {
 import toast from "react-hot-toast";
 import { ACCESS_TOKEN } from "../../constants/cookie";
 import { getCookie } from "../../utils/cookie";
+import { eventBus } from "../../utils/eventBus";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -47,20 +48,18 @@ axiosInstance.interceptors.response.use(
 
     // Handle binary stream data (file downloads, etc.)
     if (response.request.responseType === "blob") {
-      return { code: 200, data: response.data, msg: "success" };
+      return { status: "success", data: response.data, message: "success" };
     }
 
     // Handle response codes and errors uniformly
-    const { code, msg } = response.data as unknown as AxiosResult;
+    const { status, message } = response.data as unknown as AxiosResult;
 
-    if (code === 200) {
+    if (status === "success") {
       return response.data;
-    } else if (code === 401) {
-      toast.error("Session expired. Please log in again.");
-      window.location.href = "/login";
-      return response.data;
+    } else if (status === "error") {
+      return Promise.reject(new Error(message));
     } else {
-      toast.error(msg || "An error occurred");
+      toast.error(message || "An error occurred");
       return response.data;
     }
   },
@@ -75,10 +74,13 @@ axiosInstance.interceptors.response.use(
     if (error && error.response) {
       switch (error.response.status) {
         case 400:
-          error.message = "Bad Request (400)";
+          error.message =
+            (error.response.data as any).message || "Bad Request (400)";
           break;
         case 401:
           error.message = "Unauthorized, please log in again (401)";
+          toast.dismiss();
+          eventBus.emit("sessionExpired");
           break;
         case 403:
           error.message = "Access Forbidden (403)";

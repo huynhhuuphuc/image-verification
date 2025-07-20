@@ -1,6 +1,3 @@
-// API configuration with axios interceptors for request/response handling
-// Based on: https://blog.csdn.net/wgh2820777641/article/details/129086408
-
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -9,6 +6,8 @@ import axios, {
   AxiosResult,
 } from "axios";
 import toast from "react-hot-toast";
+import { ACCESS_TOKEN } from "../../constants/cookie";
+import { getCookie } from "../../utils/cookie";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -28,7 +27,7 @@ axiosInstance.interceptors.request.use(
       config.params = { ...config.params, t };
     }
     // Append authorization token to headers
-    const token = localStorage.getItem("ACCESS_TOKEN");
+    const token = getCookie(ACCESS_TOKEN);
     config.headers = {
       Authorization: token ? `Bearer ${token}` : "",
       ...config.headers,
@@ -57,9 +56,7 @@ axiosInstance.interceptors.response.use(
     if (code === 200) {
       return response.data;
     } else if (code === 401) {
-      // Redirect to login page for unauthorized access
       toast.error("Session expired. Please log in again.");
-      // Navigate to login - you may need to implement proper navigation here
       window.location.href = "/login";
       return response.data;
     } else {

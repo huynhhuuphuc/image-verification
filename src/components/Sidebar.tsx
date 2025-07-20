@@ -1,14 +1,7 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Package,
-  Users,
-  LogOut,
-  Scan,
-  X
-} from 'lucide-react';
-import { User } from '../types';
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { LayoutDashboard, Package, Users, LogOut, Scan, X } from "lucide-react";
+import { User } from "../types";
 
 interface SidebarProps {
   user: User | null;
@@ -23,20 +16,20 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
 
   const navigationItems = [
     {
-      name: 'Tổng quan',
-      href: '/dashboard',
-      icon: LayoutDashboard
+      name: "Tổng quan",
+      href: "/dashboard",
+      icon: LayoutDashboard,
     },
     {
-      name: 'Sản phẩm',
-      href: '/products',
-      icon: Package
+      name: "Sản phẩm",
+      href: "/products",
+      icon: Package,
     },
     {
-      name: 'Nhân viên',
-      href: '/employees',
-      icon: Users
-    }
+      name: "Nhân viên",
+      href: "/employees",
+      icon: Users,
+    },
   ];
 
   const handleNavClick = () => {
@@ -81,13 +74,17 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
                 <Link
                   to={item.href}
                   onClick={handleNavClick}
-                  className={`flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
-                      ? 'bg-primary-50 text-primary-700 border-primary-200'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                  className={`flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    isActive
+                      ? "bg-primary-50 text-primary-700 border-primary-200"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
                 >
-                  <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-600' : 'text-gray-400'
-                    }`} />
+                  <item.icon
+                    className={`w-5 h-5 ${
+                      isActive ? "text-primary-600" : "text-gray-400"
+                    }`}
+                  />
                   <span>{item.name}</span>
                 </Link>
               </li>
@@ -101,16 +98,16 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
         {user && (
           <div className="flex items-center space-x-3 mb-4">
             <img
-              src={user.avatar}
-              alt={user.name}
+              src={user.photoURL}
+              alt={user.displayName}
               className="w-10 h-10 rounded-full object-cover flex-shrink-0"
             />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user.name}
+                {user.displayName}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {user.role}
+                {user.emailVerified ? "Đã xác thực" : "Chưa xác thực"}
               </p>
             </div>
           </div>
@@ -128,4 +125,4 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

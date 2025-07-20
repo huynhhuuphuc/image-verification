@@ -1,10 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Package, Users, LogOut, Scan, X } from "lucide-react";
-import { User } from "../types";
+import { UserFirebase } from "../types";
+import { useIsAdmin } from "../hooks/useIsAdmin";
 
 interface SidebarProps {
-  user: User | null;
+  user: UserFirebase | null;
   onLogout: () => void;
   onToggle?: () => void;
   isOpen?: boolean;
@@ -13,8 +14,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
   const location = useLocation();
+  const isAdmin = useIsAdmin(user);
 
-  const navigationItems = [
+  const baseNavigationItems = [
     {
       name: "Tổng quan",
       href: "/dashboard",
@@ -25,6 +27,9 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
       href: "/products",
       icon: Package,
     },
+  ];
+
+  const adminNavigationItems = [
     {
       name: "Nhân viên",
       href: "/employees",
@@ -32,8 +37,11 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
     },
   ];
 
+  const navigationItems = isAdmin
+    ? [...baseNavigationItems, ...adminNavigationItems]
+    : baseNavigationItems;
+
   const handleNavClick = () => {
-    // Close sidebar on mobile when navigating
     if (onClose) {
       onClose();
     }

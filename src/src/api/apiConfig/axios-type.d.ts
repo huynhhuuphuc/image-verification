@@ -2,8 +2,8 @@ import "axios";
 
 declare module "axios" {
   export interface AxiosResult<T = any> {
-    code: number;
+    status: "success" | "error";
     data: T;
-    msg: string;
+    message: string;
   }
 }

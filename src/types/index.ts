@@ -1,4 +1,4 @@
-export interface User {
+export interface UserFirebase {
   // id: string;
   // name: string;
   // email: string;
@@ -51,6 +51,16 @@ export interface User {
   stsTokenManager: any;
   tenantId: string | null;
   uid: string;
+  apiUserData?: Api.UserProps;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: "Administrator" | "Employee";
+  company: string;
 }
 
 export interface UserMetadata {

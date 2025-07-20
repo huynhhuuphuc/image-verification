@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
-import LoginScreen from "./screens/LoginScreen";
-import Sidebar from "./components/Sidebar";
-import { User } from "./types";
-import HomeScreen from "./screens/HomeScreen";
-import ProductListScreen from "./screens/ProductListScreen";
-import ProductDetailScreen from "./screens/ProductDetailScreen";
-import AddProductScreen from "./screens/AddProductScreen";
-import EmployeeManagementScreen from "./screens/EmployeeManagementScreen";
+import { BrowserRouter as Router } from "react-router-dom";
+import toast from "react-hot-toast";
+import { UserFirebase } from "./types";
+
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "./src/firebase/firebase";
 import { getCookie, removeCookie, setCookie } from "./src/utils/cookie";
@@ -22,9 +11,12 @@ import {
   CURRENT_USER,
   REFRESH_TOKEN,
 } from "./src/constants/cookie";
+import { currentUser as currentUserApi } from "./src/api/apiServer/apiUser";
+import { useIsAdmin } from "./hooks/useIsAdmin";
+import { eventBus } from "./src/utils/eventBus";
+import AppRoutes from "./AppRoutes.tsx";
 
 const App: React.FC = () => {
-  // Initialize authentication state from cookie - check both token and user
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const token = getCookie(ACCESS_TOKEN);
     const user = getCookie(CURRENT_USER);
@@ -34,18 +26,21 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Initialize user data from cookie
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+  const [currentUser, setCurrentUser] = useState<UserFirebase | null>(() => {
     const savedUser = getCookie(CURRENT_USER);
     console.log("Current user:", savedUser);
     return savedUser || null;
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const isAdmin = useIsAdmin(currentUser);
 
   useEffect(() => {
-    const checkAuthentication = () => {
+    const checkAuthentication = async () => {
       const token = getCookie(ACCESS_TOKEN);
       const user = getCookie(CURRENT_USER);
+
       const shouldBeAuthenticated = !!(token && user);
 
       if (shouldBeAuthenticated !== isAuthenticated) {
@@ -55,6 +50,21 @@ const App: React.FC = () => {
           setCurrentUser(null);
         } else if (user && !currentUser) {
           setCurrentUser(user);
+        }
+      }
+
+      if (shouldBeAuthenticated && token && user) {
+        try {
+          const response = await currentUserApi();
+
+          const updatedUser = {
+            ...user,
+            apiUserData: response,
+          };
+          setCurrentUser(updatedUser);
+          setCookie(CURRENT_USER, updatedUser);
+        } catch (error) {
+          console.error("Failed to refresh user data:", error);
         }
       }
     };
@@ -74,30 +84,62 @@ const App: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleSessionExpired = () => setIsSessionExpired(true);
+    eventBus.on("sessionExpired", handleSessionExpired);
+
+    return () => {
+      eventBus.off("sessionExpired", handleSessionExpired);
+    };
+  }, []);
+
   const handleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      const user: User = result.user as unknown as User;
-      setCurrentUser(user as unknown as User);
-      setIsAuthenticated(true);
-      toast.success("Đăng nhập thành công");
+      const user = result.user as unknown as UserFirebase;
 
       setCookie(ACCESS_TOKEN, user.accessToken);
       setCookie(REFRESH_TOKEN, user.stsTokenManager.refreshToken);
-      setCookie(CURRENT_USER, user);
+
+      const response = await currentUserApi();
+
+      const streamlinedUser = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+        accessToken: user.accessToken,
+        stsTokenManager: {
+          accessToken: user.stsTokenManager.accessToken,
+          refreshToken: user.stsTokenManager.refreshToken,
+          expirationTime: user.stsTokenManager.expirationTime,
+        },
+        apiUserData: response,
+      };
+      setCurrentUser(streamlinedUser as UserFirebase);
+      setCookie(CURRENT_USER, streamlinedUser);
+
+      toast.success("Đăng nhập thành công");
+      setIsAuthenticated(true);
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
     setIsAuthenticated(false);
+    setCurrentUser(null);
 
     removeCookie(ACCESS_TOKEN);
     removeCookie(REFRESH_TOKEN);
     removeCookie(CURRENT_USER);
+  };
+
+  const handleResetSessionExpired = () => {
+    setIsSessionExpired(false);
+    handleLogout();
   };
 
   const toggleSidebar = () => {
@@ -145,127 +187,22 @@ const App: React.FC = () => {
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* Login route - redirect to dashboard if authenticated */}
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <LoginScreen onLogin={handleLogin} />
-            )
-          }
+    <>
+      <Router>
+        <AppRoutes
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+          onToggleSidebar={toggleSidebar}
+          onCloseSidebar={closeSidebar}
+          onResetSessionExpired={handleResetSessionExpired}
+          isSessionExpired={isSessionExpired}
+          isAuthenticated={isAuthenticated}
+          currentUser={currentUser}
+          isAdmin={isAdmin}
+          isSidebarOpen={isSidebarOpen}
         />
-
-        {/* Protected routes - redirect to login if not authenticated */}
-        <Route
-          path="/*"
-          element={
-            isAuthenticated ? (
-              <div className="main-layout bg-gray-50">
-                {/* Mobile overlay */}
-                {isSidebarOpen && (
-                  <div
-                    className="mobile-overlay sm:hidden"
-                    onClick={closeSidebar}
-                  />
-                )}
-
-                {/* Sidebar */}
-                <div
-                  className={`
-                  mobile-sidebar sm:relative sm:translate-x-0 sm:w-64 sm:flex-shrink-0
-                  ${isSidebarOpen ? "translate-x-0" : "closed"}
-                `}
-                >
-                  <Sidebar
-                    user={currentUser}
-                    onLogout={handleLogout}
-                    onToggle={toggleSidebar}
-                    isOpen={isSidebarOpen}
-                    onClose={closeSidebar}
-                  />
-                </div>
-
-                {/* Main content */}
-                <main className="main-content">
-                  <Routes>
-                    <Route
-                      path="/"
-                      element={<Navigate to="/dashboard" replace />}
-                    />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <HomeScreen
-                          user={currentUser}
-                          onToggleSidebar={toggleSidebar}
-                        />
-                      }
-                    />
-                    <Route
-                      path="/products"
-                      element={
-                        <ProductListScreen onToggleSidebar={toggleSidebar} />
-                      }
-                    />
-                    <Route
-                      path="/products/add"
-                      element={
-                        <AddProductScreen onToggleSidebar={toggleSidebar} />
-                      }
-                    />
-                    <Route
-                      path="/products/:id"
-                      element={
-                        <ProductDetailScreen onToggleSidebar={toggleSidebar} />
-                      }
-                    />
-                    <Route
-                      path="/employees"
-                      element={
-                        <EmployeeManagementScreen
-                          onToggleSidebar={toggleSidebar}
-                        />
-                      }
-                    />
-                  </Routes>
-                </main>
-              </div>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-      </Routes>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: "#fff",
-            color: "#363636",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            borderRadius: "8px",
-            border: "1px solid #e1e5e9",
-          },
-          success: {
-            iconTheme: {
-              primary: "#10b981",
-              secondary: "#fff",
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: "#ef4444",
-              secondary: "#fff",
-            },
-          },
-        }}
-      />
-    </Router>
+      </Router>
+    </>
   );
 };
 

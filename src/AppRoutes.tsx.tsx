@@ -95,9 +95,9 @@ const AppRoutes: React.FC<{
                 {/* Sidebar */}
                 <div
                   className={`
-                  mobile-sidebar sm:relative sm:translate-x-0 sm:w-64 sm:flex-shrink-0
-                  ${isSidebarOpen ? "translate-x-0" : "closed"}
-                `}
+                mobile-sidebar sm:relative sm:translate-x-0 sm:w-64 sm:flex-shrink-0
+                ${isSidebarOpen ? "translate-x-0" : "closed"}
+              `}
                 >
                   <Sidebar
                     user={currentUser}
@@ -165,31 +165,6 @@ const AppRoutes: React.FC<{
           }
         />
       </Routes>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: "#fff",
-            color: "#363636",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            borderRadius: "8px",
-            border: "1px solid #e1e5e9",
-          },
-          success: {
-            iconTheme: {
-              primary: "#10b981",
-              secondary: "#fff",
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: "#ef4444",
-              secondary: "#fff",
-            },
-          },
-        }}
-      />
     </>
   );
 };

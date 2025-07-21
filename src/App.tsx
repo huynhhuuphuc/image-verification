@@ -15,6 +15,7 @@ import { currentUser as currentUserApi } from "./src/api/apiServer/apiUser";
 import { useIsAdmin } from "./hooks/useIsAdmin";
 import { eventBus } from "./src/utils/eventBus";
 import AppRoutes from "./AppRoutes.tsx";
+import GlobalToastProvider from "./GlobalToastProvider.tsx";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -188,6 +189,7 @@ const App: React.FC = () => {
 
   return (
     <>
+      <GlobalToastProvider />
       <Router>
         <AppRoutes
           onLogin={handleLogin}

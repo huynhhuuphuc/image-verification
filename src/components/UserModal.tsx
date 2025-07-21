@@ -154,12 +154,10 @@ const UserModal: React.FC<UserModalProps> = ({
         };
         console.log("Updating user:", userToEdit.id, "with data:", updateData);
         await updateUser(updateData);
-        toast.success("Cập nhật nhân viên thành công!");
       } else {
         // Create new user
         console.log("Creating new user with data:", dataToSend);
         await createUserByEmail(dataToSend);
-        toast.success("Thêm nhân viên thành công!");
       }
 
       onUserAdded();
@@ -217,7 +215,7 @@ const UserModal: React.FC<UserModalProps> = ({
         />
 
         {/* Modal */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full duration-300 animate-fade-in">
           {/* Header */}
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="flex items-center justify-between mb-4">
@@ -372,7 +370,7 @@ const UserModal: React.FC<UserModalProps> = ({
                       {checkIsEdit ? "Tải lên ảnh mới" : "Tải lên ảnh đại diện"}
                     </p>
                     <p className="text-xs text-gray-500 mb-3">
-                      PNG, JPG lên đến 10MB
+                      jpeg, jpg, png lên đến 20MB
                     </p>
                     <label className="btn-primary cursor-pointer text-sm flex items-center justify-center">
                       <Camera className="w-4 h-4 mr-2" />

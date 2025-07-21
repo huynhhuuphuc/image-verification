@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import { formatJoinDate } from "../src/utils/validation";
 import UserModal from "../components/UserModal";
 import RemoveUserModal from "../components/RemoveUserModal";
+import { useToastQueue } from "../src/utils/showToast";
 
 interface EmployeeManagementScreenProps {
   onToggleSidebar: () => void;
@@ -46,7 +47,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<Api.UserProps | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
+  const { showToastAndWait } = useToastQueue();
   // Dropdown menu state
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
 
@@ -128,15 +129,11 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
     setCheckIsEdit(true);
   };
 
-  const handleUserAdded = () => {
+  const handleUserAdded = async () => {
     const message = checkIsEdit
       ? "Thông tin nhân viên đã được cập nhật"
       : "Nhân viên mới đã được thêm thành công";
-
-    toast.success(message, {
-      duration: 2000,
-    });
-
+    await showToastAndWait(message, "success");
     // Reset states
     setUserToEdit(null);
     setCheckIsEdit(false);
@@ -164,7 +161,10 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
     setIsDeleting(true);
     try {
       await removeUser(userToDelete.email);
-      toast.success(`Đã xóa nhân viên ${userToDelete.name} thành công`);
+      await showToastAndWait(
+        `Đã xóa nhân viên ${userToDelete.name} thành công`,
+        "success"
+      );
 
       // Refresh the user list
       fetchUsers(currentPage, usersPerPage);
@@ -206,6 +206,15 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
 
   const getRoleDisplayName = (role: string) => {
     return role === ROLE.ADMIN ? "Quản trị viên" : "Nhân viên";
+  };
+
+  const handleSendEmail = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    email: string
+  ) => {
+    e.preventDefault();
+    const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}`;
+    window.open(gmailLink, "_blank");
   };
 
   return (
@@ -448,7 +457,10 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                   </div>
 
                   <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <button className="flex-1 btn-secondary text-xs sm:text-sm py-2 flex items-center justify-center">
+                    <button
+                      className="flex-1 btn-secondary text-xs sm:text-sm py-2 flex items-center justify-center"
+                      onClick={(e) => handleSendEmail(e, user.email)}
+                    >
                       <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                       Liên hệ
                     </button>
@@ -580,7 +592,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
               </div>
             </button>
 
-            <button className="flex items-center space-x-3 p-3 sm:p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 text-left">
+            {/* <button className="flex items-center space-x-3 p-3 sm:p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 text-left">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </div>
@@ -592,7 +604,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                   Phân quyền cho người dùng
                 </p>
               </div>
-            </button>
+            </button> */}
 
             <button
               onClick={handleRefresh}

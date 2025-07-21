@@ -11,14 +11,13 @@ import {
   Loader2,
   AlertCircle,
   Trash2,
-  X,
 } from "lucide-react";
-import { getListAllUsers, removeUser } from "../src/api/apiServer/apiUser";
 import ROLE from "../src/utils/role";
-import toast from "react-hot-toast";
 import { formatJoinDate } from "../src/utils/validation";
 import UserModal from "../components/UserModal";
 import RemoveUserModal from "../components/RemoveUserModal";
+import { useToastQueue } from "../src/utils/showToast";
+import { useUserForm } from "../hooks/useUserForm";
 
 interface EmployeeManagementScreenProps {
   onToggleSidebar: () => void;
@@ -27,6 +26,18 @@ interface EmployeeManagementScreenProps {
 const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
   onToggleSidebar,
 }) => {
+  // Custom hook for user management
+  const {
+    users,
+    isLoading,
+    isDeleting,
+    error,
+    deleteUser,
+    refreshUsers,
+    stats,
+  } = useUserForm({ usersPerPage: 50 });
+
+  // Local UI state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<
     "All" | "ADMIN" | "EMPLOYEE"
@@ -35,47 +46,13 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [checkIsEdit, setCheckIsEdit] = useState(false);
   const [userToEdit, setUserToEdit] = useState<Api.UserProps | null>(null);
-  const [users, setUsers] = useState<Api.UserProps[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage] = useState(50);
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<Api.UserProps | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
+  const { showToastAndWait } = useToastQueue();
   // Dropdown menu state
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
-
-  const fetchUsers = async (page: number = 1, limit: number = usersPerPage) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const params: Api.ListParams = {
-        skip: (page - 1) * limit,
-        limit: limit,
-      };
-
-      const response = await getListAllUsers(params);
-
-      setUsers(response.users || []);
-      setTotalUsers(response.total || 0);
-    } catch (error) {
-      setError("Không thể tải danh sách nhân viên. Vui lòng thử lại.");
-      toast.error("Lỗi khi tải danh sách nhân viên");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    fetchUsers(currentPage, usersPerPage);
-  }, [currentPage, usersPerPage]);
 
   // Filter users based on search term and role
   const filteredUsers = users.filter((user) => {
@@ -98,24 +75,6 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
     [ROLE.EMPLOYEE]: User,
   };
 
-  const getRoleStats = () => {
-    const currentPageStats = {
-      total: users.length,
-      administrators: users.filter((user) => user.role === ROLE.ADMIN).length,
-      employees: users.filter((user) => user.role === ROLE.EMPLOYEE).length,
-    };
-
-    const showingAllUsers = users.length === totalUsers;
-
-    return {
-      ...currentPageStats,
-      totalFromAPI: totalUsers,
-      showingAllUsers,
-    };
-  };
-
-  const stats = getRoleStats();
-
   const handleAddUser = () => {
     setUserToEdit(null); // Reset any previously selected user
     setIsAddModalOpen(true);
@@ -128,21 +87,17 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
     setCheckIsEdit(true);
   };
 
-  const handleUserAdded = () => {
+  const handleUserAdded = async () => {
     const message = checkIsEdit
       ? "Thông tin nhân viên đã được cập nhật"
       : "Nhân viên mới đã được thêm thành công";
-
-    toast.success(message, {
-      duration: 2000,
-    });
-
+    await showToastAndWait(message, "success");
     // Reset states
     setUserToEdit(null);
     setCheckIsEdit(false);
 
     // Refresh user list
-    fetchUsers(currentPage, usersPerPage);
+    refreshUsers();
   };
 
   const handleCloseModal = () => {
@@ -161,22 +116,9 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
 
-    setIsDeleting(true);
-    try {
-      await removeUser(userToDelete.email);
-      toast.success(`Đã xóa nhân viên ${userToDelete.name} thành công`);
-
-      // Refresh the user list
-      fetchUsers(currentPage, usersPerPage);
-
-      setIsDeleteModalOpen(false);
-      setUserToDelete(null);
-    } catch (error: any) {
-      console.error("Error deleting user:", error);
-      toast.error("Có lỗi xảy ra khi xóa nhân viên");
-    } finally {
-      setIsDeleting(false);
-    }
+    await deleteUser(userToDelete.email);
+    setIsDeleteModalOpen(false);
+    setUserToDelete(null);
   };
 
   const handleCancelDelete = () => {
@@ -201,11 +143,20 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
   }, [openDropdownId]);
 
   const handleRefresh = () => {
-    fetchUsers(currentPage, usersPerPage);
+    refreshUsers();
   };
 
   const getRoleDisplayName = (role: string) => {
     return role === ROLE.ADMIN ? "Quản trị viên" : "Nhân viên";
+  };
+
+  const handleSendEmail = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    email: string
+  ) => {
+    e.preventDefault();
+    const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}`;
+    window.open(gmailLink, "_blank");
   };
 
   return (
@@ -448,7 +399,10 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                   </div>
 
                   <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <button className="flex-1 btn-secondary text-xs sm:text-sm py-2 flex items-center justify-center">
+                    <button
+                      className="flex-1 btn-secondary text-xs sm:text-sm py-2 flex items-center justify-center"
+                      onClick={(e) => handleSendEmail(e, user.email)}
+                    >
                       <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                       Liên hệ
                     </button>
@@ -580,7 +534,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
               </div>
             </button>
 
-            <button className="flex items-center space-x-3 p-3 sm:p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 text-left">
+            {/* <button className="flex items-center space-x-3 p-3 sm:p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 text-left">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </div>
@@ -592,7 +546,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                   Phân quyền cho người dùng
                 </p>
               </div>
-            </button>
+            </button> */}
 
             <button
               onClick={handleRefresh}

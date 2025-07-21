@@ -76,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, onClose }) => {
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           {navigationItems.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = location.pathname.startsWith(item.href);
             return (
               <li key={item.name}>
                 <Link

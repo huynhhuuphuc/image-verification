@@ -22,7 +22,8 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    description: ''
+    description: '',
+    code: ''
   });
 
   const [images, setImages] = useState({
@@ -60,6 +61,10 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.code.trim()) {
+      newErrors.code = 'Mã sản phẩm là bắt buộc';
+    }
 
     if (!formData.name.trim()) {
       newErrors.name = 'Tên sản phẩm là bắt buộc';
@@ -158,6 +163,24 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
             </div>
 
             <div className="space-y-4 sm:space-y-6">
+              {/* Product Code */}
+              <div>
+                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+                  ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="code"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleInputChange}
+                  placeholder="Nhập ID..."
+                  className={`input-field ${errors.code ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
+                />
+                {errors.code && (
+                  <p className="mt-1 text-xs text-red-600">{errors.code}</p>
+                )}
+              </div>
               {/* Product Name */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">

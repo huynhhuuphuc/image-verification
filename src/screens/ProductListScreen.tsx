@@ -1,32 +1,38 @@
-import React, { useState } from 'react';
-import { Plus, Search, Filter, Calendar, Eye, Menu } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { mockProducts, mockCategories } from '../data/mockData';
+import React, { useState } from "react";
+import { Plus, Search, Filter, Calendar, Eye, Menu } from "lucide-react";
+import { Link, Outlet } from "react-router-dom";
+import { mockProducts, mockCategories } from "../data/mockData";
 
 interface ProductListScreenProps {
   onToggleSidebar: () => void;
 }
 
-const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }) => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+const ProductListScreen: React.FC<ProductListScreenProps> = ({
+  onToggleSidebar,
+}) => {
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProducts = mockProducts.filter((product) => {
+    const matchesCategory =
+      selectedCategory === "all" || product.category === selectedCategory;
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
   return (
     <div className="w-full min-h-full">
+      <Outlet />
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
         {/* Mobile Header with Hamburger */}
         <div className="flex items-center justify-between mb-6 bg-white sticky top-0 z-10 sm:hidden">
@@ -44,7 +50,9 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-4 sm:space-y-0">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Quản lý sản phẩm</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                Quản lý sản phẩm
+              </h1>
               <p className="text-gray-600 text-sm sm:text-base">
                 Theo dõi và quản lý danh sách sản phẩm kiểm tra nhãn mác in ấn
               </p>
@@ -85,17 +93,17 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 ${selectedCategory === category.id
-                      ? 'bg-primary-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                    selectedCategory === category.id
+                      ? "bg-primary-600 text-white shadow-md"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                  }`}
                 >
                   {category.name} ({category.count})
                 </button>
               ))}
             </div>
           </div>
-
         </div>
 
         {/* Product Grid */}
@@ -122,7 +130,11 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0">
                     <span className="capitalize">
-                      {mockCategories.find(cat => cat.id === product.category)?.name}
+                      {
+                        mockCategories.find(
+                          (cat) => cat.id === product.category
+                        )?.name
+                      }
                     </span>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -133,12 +145,16 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-gray-600">Đang hoạt động</span>
+                      <span className="text-xs text-gray-600">
+                        Đang hoạt động
+                      </span>
                     </div>
 
                     <div className="flex items-center space-x-1 text-primary-600 group-hover:text-primary-700">
                       <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="text-xs sm:text-sm font-medium">Xem chi tiết</span>
+                      <span className="text-xs sm:text-sm font-medium">
+                        Xem chi tiết
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -161,8 +177,8 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
             </p>
             <button
               onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('all');
+                setSearchTerm("");
+                setSelectedCategory("all");
               }}
               className="btn-secondary"
             >
@@ -214,4 +230,4 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ onToggleSidebar }
   );
 };
 
-export default ProductListScreen; 
+export default ProductListScreen;

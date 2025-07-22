@@ -24,7 +24,7 @@ interface UseUserFormReturn {
   // Actions
   fetchUsers: (page?: number, limit?: number) => Promise<void>;
   deleteUser: (email: string) => Promise<void>;
-  refreshUsers: () => void;
+  refreshUsers: (role?: "ADMIN" | "EMPLOYEE") => void;
   setCurrentPage: (page: number) => void;
 
   // Computed values
@@ -50,7 +50,8 @@ export const useUserForm = ({
 
   const fetchUsers = async (
     page: number = currentPage,
-    limit: number = usersPerPage
+    limit: number = usersPerPage,
+    role?: "ADMIN" | "EMPLOYEE"
   ) => {
     try {
       setIsLoading(true);
@@ -59,6 +60,7 @@ export const useUserForm = ({
       const params: Api.ListParams = {
         skip: (page - 1) * limit,
         limit: limit,
+        ...(role && { role }),
       };
 
       const response = await getListAllUsers(params);
@@ -88,8 +90,8 @@ export const useUserForm = ({
     }
   };
 
-  const refreshUsers = () => {
-    fetchUsers(currentPage, usersPerPage);
+  const refreshUsers = (role?: "ADMIN" | "EMPLOYEE") => {
+    fetchUsers(currentPage, usersPerPage, role);
   };
 
   // Calculate statistics

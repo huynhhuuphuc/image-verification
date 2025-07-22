@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Search, Filter, Calendar, Eye, Menu } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import { mockProducts, mockCategories } from "../data/mockData";
+import { useProductForm } from "../hooks/useProductForm";
 
 interface ProductListScreenProps {
   onToggleSidebar: () => void;
@@ -12,8 +13,21 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const {
+    products,
+    totalProducts,
+    currentPage,
+    isLoading,
+    isDeleting,
+    error,
+    fetchProducts,
+  } = useProductForm();
 
-  const filteredProducts = mockProducts.filter((product) => {
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const filteredProducts = products.filter((product) => {
     const matchesCategory =
       selectedCategory === "all" || product.category === selectedCategory;
     const matchesSearch = product.name
@@ -117,7 +131,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
               <Link to={`/products/${product.id}`} className="block">
                 <div className="aspect-square rounded-lg overflow-hidden mb-3 sm:mb-4 bg-gray-100">
                   <img
-                    src={product.image}
+                    src={product.avatar.public_url}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -138,7 +152,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                     </span>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span>{formatDate(product.createdAt)}</span>
+                      <span>{formatDate(new Date(product.created_at))}</span>
                     </div>
                   </div>
 

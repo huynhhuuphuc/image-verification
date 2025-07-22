@@ -54,7 +54,7 @@ const UserModal: React.FC<UserModalProps> = ({
         name: userToEdit.name,
         employee_code: userToEdit.employee_code,
         role: userToEdit.role,
-        avatar_url: userToEdit.avatar_url || "",
+        avatar_url: userToEdit.avatar.public_url || "",
       });
     } else {
       // Reset form for adding new user
@@ -150,7 +150,7 @@ const UserModal: React.FC<UserModalProps> = ({
           email: dataToSend.email,
           name: dataToSend.name,
           role: dataToSend.role,
-          avatar_url: finalAvatarUrl, // Use the processed avatar URL
+          avatar_url: finalAvatarUrl,
         };
         console.log("Updating user:", userToEdit.id, "with data:", updateData);
         await updateUser(updateData);

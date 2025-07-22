@@ -56,13 +56,11 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
 
   // Filter users based on search term and role
   const filteredUsers = users.filter((user) => {
-    const matchesSearch =
+    return (
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.employee_code.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRole = selectedRole === "All" || user.role === selectedRole;
-    return matchesSearch && matchesRole;
+      user.employee_code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   });
 
   const roleColors: Record<string, string> = {
@@ -158,6 +156,14 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
     const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}`;
     window.open(gmailLink, "_blank");
   };
+
+  useEffect(() => {
+    const roleParam =
+      selectedRole === "All"
+        ? undefined
+        : (selectedRole as "ADMIN" | "EMPLOYEE");
+    refreshUsers(roleParam);
+  }, [selectedRole]);
 
   return (
     <div className="w-full min-h-full">
@@ -296,9 +302,9 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {user.avatar_url ? (
+                        {user.avatar.public_url ? (
                           <img
-                            src={user.avatar_url}
+                            src={user.avatar.public_url}
                             alt={user.name}
                             className="w-full h-full rounded-full object-cover"
                             onError={(e) => {
@@ -313,7 +319,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                         ) : null}
                         <User
                           className={`w-6 h-6 text-gray-500 ${
-                            user.avatar_url ? "hidden" : ""
+                            user.avatar.public_url ? "hidden" : ""
                           }`}
                         />
                       </div>

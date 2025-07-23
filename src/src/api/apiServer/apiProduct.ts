@@ -21,3 +21,32 @@ export const createProduct = async (
   });
   return response.data;
 };
+
+export const getProductByProductCode = async (
+  productCode: string
+): Promise<Api.ProductProps> => {
+  const response = await request({
+    url: `/products/${productCode}`,
+    method: "GET",
+  });
+  return response.data;
+};
+
+export const updateProduct = async (
+  product: Api.ProductUpdateProps,
+  productCode: string
+): Promise<Api.ProductProps> => {
+  const response = await request({
+    url: `/products/${productCode}`,
+    method: "PUT",
+    data: product,
+  });
+  return response.data;
+};
+
+export const deleteProduct = async (productCode: string): Promise<void> => {
+  await request({
+    url: `/products/${productCode}`,
+    method: "DELETE",
+  });
+};

@@ -61,6 +61,7 @@ declare namespace Api {
     product_code: string;
     name: string;
     category: string;
+    description: string;
     avatar: {
       path: string;
       public_url: string;
@@ -75,6 +76,14 @@ declare namespace Api {
     product_code: string;
     name: string;
     category: string;
+    description: string;
+    avatar_url: string;
+    sample_image_url: string;
+  };
+  type ProductUpdateProps = {
+    name: string;
+    category: string;
+    description: string;
     avatar_url: string;
     sample_image_url: string;
   };

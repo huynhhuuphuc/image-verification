@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Upload,
@@ -11,17 +11,26 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { mockCategories } from "../data/mockData";
-import { createProduct } from "../src/api/apiServer/apiProduct";
+import {
+  createProduct,
+  getProductByProductCode,
+  updateProduct,
+} from "../src/api/apiServer/apiProduct";
 import { uploadFile } from "../src/api/apiServer/apiUpload";
+import { useToastQueue } from "../src/utils/showToast";
+import toast from "react-hot-toast";
 
-interface AddProductScreenProps {
+interface ProductFormProps {
   onToggleSidebar: () => void;
 }
 
-const AddProductScreen: React.FC<AddProductScreenProps> = ({
-  onToggleSidebar,
-}) => {
+const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { showToastAndWait } = useToastQueue();
+
+  const productId = searchParams.get("productId");
+  const isEditMode = Boolean(productId);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -31,6 +40,11 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
     avatar_url: "",
     sample_image_url: "",
   });
+
+  const [originalData, setOriginalData] = useState<Api.ProductProps | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(false);
 
   const [images, setImages] = useState<{
     representative: File | null;
@@ -49,6 +63,42 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch product data when in edit mode
+  useEffect(() => {
+    const fetchProductData = async () => {
+      if (isEditMode && productId) {
+        setIsLoading(true);
+        try {
+          const productData = await getProductByProductCode(productId);
+          console.log("productData", productData);
+          setOriginalData(productData);
+          setFormData({
+            name: productData.name,
+            category: productData.category,
+            description: productData.description,
+            code: productData.product_code,
+            avatar_url: productData.avatar.public_url,
+            sample_image_url: productData.sample_image.public_url,
+          });
+
+          // Set image previews with existing URLs
+          setImagePreview({
+            representative: productData.avatar.public_url,
+            sample: productData.sample_image.public_url,
+          });
+        } catch (error) {
+          console.error("Error fetching product:", error);
+          await showToastAndWait("Lỗi khi tải thông tin sản phẩm", "error");
+          navigate("/products");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchProductData();
+  }, [isEditMode, productId]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -87,6 +137,14 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
 
   const removeImage = (type: "representative" | "sample") => {
     setImages((prev) => ({ ...prev, [type]: null }));
+    setImagePreview((prev) => ({ ...prev, [type]: null }));
+
+    // Also clear the URL from form data if it's an existing image
+    if (type === "representative") {
+      setFormData((prev) => ({ ...prev, avatar_url: "" }));
+    } else {
+      setFormData((prev) => ({ ...prev, sample_image_url: "" }));
+    }
   };
 
   const validateForm = () => {
@@ -104,16 +162,36 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
       newErrors.category = "Danh mục là bắt buộc";
     }
 
-    if (!images.representative) {
-      newErrors.representative = "Ảnh đại diện là bắt buộc";
-    }
+    // Images are required only when creating new product
+    if (!isEditMode) {
+      if (!images.representative) {
+        newErrors.representative = "Ảnh đại diện là bắt buộc";
+      }
 
-    if (!images.sample) {
-      newErrors.sample = "Ảnh mẫu thiết kế là bắt buộc";
+      if (!images.sample) {
+        newErrors.sample = "Ảnh mẫu thiết kế là bắt buộc";
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Check if form data has changed from original
+  const hasDataChanged = () => {
+    if (!isEditMode || !originalData) return true;
+
+    const hasTextChanged =
+      formData.name !== originalData.name ||
+      formData.category !== originalData.category;
+
+    const hasImageChanged =
+      images.representative !== null ||
+      images.sample !== null ||
+      formData.avatar_url !== originalData.avatar.public_url ||
+      formData.sample_image_url !== originalData.sample_image.public_url;
+
+    return hasTextChanged || hasImageChanged;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,48 +201,76 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
       return;
     }
 
+    // Check for changes in edit mode
+    if (isEditMode && !hasDataChanged()) {
+      toast.error("Thông tin chưa được chỉnh sửa", {
+        duration: 2000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate API call
     try {
-      let finalAvatarUrl = formData.avatar_url || "";
-      let finalSampleImageUrl = formData.sample_image_url || "";
-      // await new Promise(resolve => setTimeout(resolve, 2000));
+      let finalAvatarUrl = formData.avatar_url;
+      let finalSampleImageUrl = formData.sample_image_url;
+
+      // Upload new images if provided
       if (images.representative) {
         const response = await uploadFile(images.representative, "products");
-        console.log("response", response);
         finalAvatarUrl = response.file_path;
       }
       if (images.sample) {
         const response = await uploadFile(images.sample, "products");
-        console.log("response", response);
         finalSampleImageUrl = response.file_path;
       }
-      const requestBody = {
-        product_code: formData.code,
-        name: formData.name,
-        // category: formData.category,
-        category: "FOOD",
-        avatar_url: finalAvatarUrl,
-        sample_image_url: finalSampleImageUrl,
-      };
-      const response = await createProduct(requestBody);
-      console.log("response", response);
-      // Navigate back to products list with success message
-      navigate("/products", {
-        state: {
-          message: `Sản phẩm "${formData.name}" đã được thêm thành công!`,
-          type: "success",
-        },
-      });
+
+      if (isEditMode && productId) {
+        // Update existing product
+        const requestBody: Api.ProductUpdateProps = {
+          name: formData.name,
+          category: formData.category,
+          description: formData.description,
+          avatar_url: images.representative
+            ? finalAvatarUrl
+            : originalData?.avatar?.path || "",
+          sample_image_url: images.sample
+            ? finalSampleImageUrl
+            : originalData?.sample_image?.path || "",
+        };
+        await updateProduct(requestBody, productId);
+        await showToastAndWait(
+          `Sản phẩm "${formData.name}" đã được cập nhật thành công!`,
+          "success"
+        );
+        navigate("/products");
+      } else {
+        // Create new product
+        const requestBody: Api.ProductCreateProps = {
+          product_code: formData.code,
+          name: formData.name,
+          category: formData.category,
+          description: formData.description,
+          avatar_url: finalAvatarUrl,
+          sample_image_url: finalSampleImageUrl,
+        };
+        await createProduct(requestBody);
+        await showToastAndWait(
+          `Sản phẩm "${formData.name}" đã được thêm thành công!`,
+          "success"
+        );
+        navigate("/products");
+      }
     } catch (error) {
-      console.error("Error adding product:", error);
+      console.error("Error saving product:", error);
+      const action = isEditMode ? "cập nhật" : "thêm";
+      await showToastAndWait(`Lỗi khi ${action} sản phẩm`, "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const availableCategories = mockCategories.filter((cat) => cat.id !== "all");
+  const availableCategories = mockCategories;
 
   return (
     <div className="w-full min-h-full">
@@ -185,7 +291,9 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </Link>
           </div>
-          <h1 className="text-lg font-bold text-gray-900">Thêm sản phẩm</h1>
+          <h1 className="text-lg font-bold text-gray-900">
+            {isEditMode ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm"}
+          </h1>
           <div className="w-10"></div>
         </div>
 
@@ -199,13 +307,25 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
           </Link>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Thêm sản phẩm mới
+              {isEditMode ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới"}
             </h1>
             <p className="text-gray-600 text-sm sm:text-base">
-              Tạo sản phẩm mới cho hệ thống kiểm tra nhãn mác
+              {isEditMode
+                ? "Cập nhật thông tin sản phẩm trong hệ thống kiểm tra nhãn mác"
+                : "Tạo sản phẩm mới cho hệ thống kiểm tra nhãn mác"}
             </p>
           </div>
         </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mr-3"></div>
+            <span className="text-gray-600">
+              Đang tải thông tin sản phẩm...
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
           {/* Basic Information */}
@@ -235,7 +355,10 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
                   value={formData.code}
                   onChange={handleInputChange}
                   placeholder="Nhập ID..."
+                  disabled={isEditMode}
                   className={`input-field ${
+                    isEditMode ? "bg-gray-100 cursor-not-allowed" : ""
+                  } ${
                     errors.code
                       ? "border-red-300 focus:ring-red-500 focus:border-red-500"
                       : ""
@@ -243,6 +366,11 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
                 />
                 {errors.code && (
                   <p className="mt-1 text-xs text-red-600">{errors.code}</p>
+                )}
+                {isEditMode && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    ID sản phẩm không thể thay đổi
+                  </p>
                 )}
               </div>
               {/* Product Name */}
@@ -339,9 +467,13 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
               {/* Representative Image */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Ảnh đại diện <span className="text-red-500">*</span>
+                  Ảnh đại diện{" "}
+                  {!isEditMode && <span className="text-red-500">*</span>}
+                  {isEditMode && (
+                    <span className="text-gray-500 text-xs">(tùy chọn)</span>
+                  )}
                 </label>
-                {!images.representative ? (
+                {!images.representative && !imagePreview.representative ? (
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors duration-200">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <Upload className="w-5 h-5 text-gray-400" />
@@ -377,6 +509,17 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
                     >
                       <X className="w-3 h-3" />
                     </button>
+                    {/* Add option to replace image */}
+                    <label className="absolute bottom-2 right-2 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 px-2 py-1 rounded text-xs cursor-pointer transition-all duration-200">
+                      <Camera className="w-3 h-3 inline mr-1" />
+                      Thay đổi
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload("representative")}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
                 )}
                 {errors.representative && (
@@ -389,9 +532,13 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
               {/* Sample Design Image */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Ảnh mẫu thiết kế <span className="text-red-500">*</span>
+                  Ảnh mẫu thiết kế{" "}
+                  {!isEditMode && <span className="text-red-500">*</span>}
+                  {isEditMode && (
+                    <span className="text-gray-500 text-xs">(tùy chọn)</span>
+                  )}
                 </label>
-                {!images.sample ? (
+                {!images.sample && !imagePreview.sample ? (
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors duration-200">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <Upload className="w-5 h-5 text-gray-400" />
@@ -427,6 +574,17 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
                     >
                       <X className="w-3 h-3" />
                     </button>
+                    {/* Add option to replace image */}
+                    <label className="absolute bottom-2 right-2 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 px-2 py-1 rounded text-xs cursor-pointer transition-all duration-200">
+                      <Camera className="w-3 h-3 inline mr-1" />
+                      Thay đổi
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload("sample")}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
                 )}
                 {errors.sample && (
@@ -454,18 +612,18 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
             </Link>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoading}
               className="btn-primary flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Đang thêm...
+                  {isEditMode ? "Đang cập nhật..." : "Đang thêm..."}
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Thêm sản phẩm
+                  {isEditMode ? "Cập nhật sản phẩm" : "Thêm sản phẩm"}
                 </>
               )}
             </button>
@@ -476,4 +634,4 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({
   );
 };
 
-export default AddProductScreen;
+export default ProductForm;

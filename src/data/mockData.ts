@@ -24,10 +24,12 @@ export const mockStats: DashboardStats = {
 };
 
 export const mockCategories: ProductCategory[] = [
-  { id: "all", name: "Tất cả", count: 145 },
-  { id: "fresh-porridge", name: "Cháo tươi", count: 45 },
-  { id: "instant-noodles", name: "Mì gói", count: 38 },
-  { id: "seafood", name: "Hải sản", count: 62 },
+  { id: "FOOD", name: "FOOD", count: 145 },
+  { id: "BEVERAGE", name: "BEVERAGE", count: 45 },
+  { id: "SNACK", name: "SNACK", count: 38 },
+  { id: "FROZEN", name: "FROZEN", count: 62 },
+  { id: "FRESH", name: "FRESH", count: 62 },
+  { id: "OTHER", name: "OTHER", count: 62 },
 ];
 
 export const mockProducts: Product[] = [

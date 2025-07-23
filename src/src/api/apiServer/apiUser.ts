@@ -2,8 +2,9 @@ import request from "../apiConfig";
 
 export const currentUser = async (): Promise<Api.UserProps> => {
   const response = await request({
-    url: "/me",
+    // url: "/me",
     method: "GET",
+    baseURL: "https://saigonfoods-dev-952258726764.asia-southeast1.run.app/me",
   });
   return response.data;
 };

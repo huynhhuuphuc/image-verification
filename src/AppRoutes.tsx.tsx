@@ -1,15 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
 import LoginScreen from "./screens/LoginScreen";
 import Sidebar from "./components/Sidebar";
 import { UserFirebase } from "./types";
 import HomeScreen from "./screens/HomeScreen";
 import ProductListScreen from "./screens/ProductListScreen";
 import ProductDetailScreen from "./screens/ProductDetailScreen";
-import AddProductScreen from "./screens/AddProductScreen";
 import EmployeeManagementScreen from "./screens/EmployeeManagementScreen";
 import { useNavigate } from "react-router-dom";
+import ProductForm from "./screens/ProductForm";
 
 const AppRoutes: React.FC<{
   onLogin: () => void;
@@ -129,20 +128,19 @@ const AppRoutes: React.FC<{
                       element={
                         <ProductListScreen onToggleSidebar={onToggleSidebar} />
                       }
-                    >
-                      <Route
-                        path="/products/:id"
-                        element={
-                          <ProductDetailScreen
-                            onToggleSidebar={onToggleSidebar}
-                          />
-                        }
-                      />
-                    </Route>
+                    />
                     <Route
-                      path="/products/add"
+                      path="/products/:id"
                       element={
-                        <AddProductScreen onToggleSidebar={onToggleSidebar} />
+                        <ProductDetailScreen
+                          onToggleSidebar={onToggleSidebar}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/products/product-form"
+                      element={
+                        <ProductForm onToggleSidebar={onToggleSidebar} />
                       }
                     />
                     <Route

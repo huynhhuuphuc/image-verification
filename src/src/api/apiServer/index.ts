@@ -1,3 +1,3 @@
 import * as apiUser from "./apiUser";
-
-export { apiUser };
+import * as apiProduct from "./apiProduct";
+export { apiUser, apiProduct };

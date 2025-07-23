@@ -1,7 +1,22 @@
-import React, { useState } from "react";
-import { Plus, Search, Filter, Calendar, Eye, Menu } from "lucide-react";
-import { Link, Outlet } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Eye,
+  Menu,
+  Trash2,
+  Pencil,
+  MoreVertical,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { mockProducts, mockCategories } from "../data/mockData";
+import { useProductForm } from "../hooks/useProductForm";
+import { useIsAdmin } from "../hooks/useIsAdmin";
+import { getCookie } from "../src/utils/cookie";
+import { CURRENT_USER } from "../src/constants/cookie";
+import RemoveProductModal from "../components/RemoveProductModal";
 
 interface ProductListScreenProps {
   onToggleSidebar: () => void;
@@ -12,8 +27,28 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const currentUser = getCookie(CURRENT_USER);
+  const isAdmin = useIsAdmin(currentUser);
+  const {
+    products,
+    totalProducts,
+    currentPage,
+    isLoading,
+    isDeleting,
+    error,
+    fetchProducts,
+    deleteProduct,
+  } = useProductForm();
+  const navigate = useNavigate();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] =
+    useState<Api.ProductProps | null>(null);
 
-  const filteredProducts = mockProducts.filter((product) => {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const filteredProducts = products.filter((product) => {
     const matchesCategory =
       selectedCategory === "all" || product.category === selectedCategory;
     const matchesSearch = product.name
@@ -30,9 +65,32 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
     });
   };
 
+  const handleEditProduct = (product: Api.ProductProps) => {
+    navigate(`/products/product-form?productId=${product.product_code}`);
+  };
+
+  const handleDeleteProduct = (product: Api.ProductProps) => {
+    setProductToDelete(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (productToDelete) {
+      const result = await deleteProduct(productToDelete.product_code);
+      if (result.success) {
+        setIsDeleteModalOpen(false);
+        setProductToDelete(null);
+      }
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setProductToDelete(null);
+  };
+
   return (
     <div className="w-full min-h-full">
-      <Outlet />
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
         {/* Mobile Header with Hamburger */}
         <div className="flex items-center justify-between mb-6 bg-white sticky top-0 z-10 sm:hidden">
@@ -59,7 +117,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
             </div>
 
             <Link
-              to="/products/add"
+              to="/products/product-form"
               className="btn-primary flex items-center space-x-2 animate-bounce-in w-full sm:w-auto justify-center"
             >
               <Plus className="w-5 h-5" />
@@ -111,19 +169,19 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
           {filteredProducts.map((product, index) => (
             <div
               key={product.id}
-              className="card-hover animate-fade-in group"
+              className="relative card-hover animate-fade-in group"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <Link to={`/products/${product.id}`} className="block">
-                <div className="aspect-square rounded-lg overflow-hidden mb-3 sm:mb-4 bg-gray-100">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Link to={`/products/${product.id}`} className="block">
+                  <div className="aspect-square rounded-lg overflow-hidden mb-3 sm:mb-4 bg-gray-100">
+                    <img
+                      src={product.sample_image.public_url}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
 
-                <div className="space-y-2">
                   <h3 className="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors duration-200 text-sm sm:text-base leading-tight">
                     {product.name}
                   </h3>
@@ -138,27 +196,52 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                     </span>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span>{formatDate(product.createdAt)}</span>
+                      <span>{formatDate(new Date(product.created_at))}</span>
                     </div>
                   </div>
+                </Link>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-gray-600">
-                        Đang hoạt động
-                      </span>
-                    </div>
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-gray-600">
+                      Đang hoạt động
+                    </span>
+                  </div>
 
-                    <div className="flex items-center space-x-1 text-primary-600 group-hover:text-primary-700">
-                      <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="text-xs sm:text-sm font-medium">
-                        Xem chi tiết
-                      </span>
-                    </div>
+                  <div className="flex items-center space-x-1 text-primary-600 group-hover:text-primary-700">
+                    <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm font-medium">
+                      Xem chi tiết
+                    </span>
                   </div>
                 </div>
-              </Link>
+
+                {isAdmin && (
+                  <div className="flex gap-2 border-t pt-3 mt-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditProduct(product);
+                      }}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Chỉnh sửa
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteProduct(product);
+                      }}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Xóa
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -186,46 +269,15 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
             </button>
           </div>
         )}
-
-        {/* Statistics */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-xs sm:text-sm">Tổng sản phẩm</p>
-                <p className="text-xl sm:text-2xl font-bold">{mockProducts.length}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-xs sm:text-sm">Đang hiển thị</p>
-                <p className="text-xl sm:text-2xl font-bold">{filteredProducts.length}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <Eye className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl p-4 sm:p-6 md:col-span-1 col-span-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-xs sm:text-sm">Danh mục</p>
-                <p className="text-xl sm:text-2xl font-bold">{mockCategories.length - 1}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <Filter className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-        </div> */}
       </div>
+      {isDeleteModalOpen && productToDelete && (
+        <RemoveProductModal
+          handleCancelDelete={handleCancelDelete}
+          productToDelete={productToDelete}
+          isDeleting={isDeleting}
+          handleConfirmDelete={handleConfirmDelete}
+        />
+      )}
     </div>
   );
 };

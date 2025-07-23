@@ -39,6 +39,8 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
 
   // Local UI state
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedRole, setSelectedRole] = useState<
     "All" | "ADMIN" | "EMPLOYEE"
   >("All");
@@ -53,17 +55,6 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
   const { showToastAndWait } = useToastQueue();
   // Dropdown menu state
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
-
-  // Filter users based on search term and role
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.employee_code.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRole = selectedRole === "All" || user.role === selectedRole;
-    return matchesSearch && matchesRole;
-  });
 
   const roleColors: Record<string, string> = {
     [ROLE.ADMIN]: "bg-purple-100 text-purple-800",
@@ -159,6 +150,29 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
     window.open(gmailLink, "_blank");
   };
 
+  useEffect(() => {
+    const roleParam =
+      selectedRole === "All"
+        ? undefined
+        : (selectedRole as "ADMIN" | "EMPLOYEE");
+    refreshUsers(roleParam, debouncedSearchTerm);
+  }, [selectedRole, debouncedSearchTerm, refreshUsers]);
+
+  // Debounce search term to avoid excessive API calls
+  useEffect(() => {
+    // Set searching state when user is typing
+    if (searchTerm !== debouncedSearchTerm) {
+      setIsSearching(true);
+    }
+
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setIsSearching(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm]);
+
   return (
     <div className="w-full min-h-full">
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
@@ -201,7 +215,11 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
           {/* Search and Filter */}
           <div className="flex flex-col space-y-4 mb-4 sm:mb-6">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              {isSearching ? (
+                <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-600 w-5 h-5 animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              )}
               <input
                 type="text"
                 placeholder="Tìm kiếm theo tên, email hoặc mã nhân viên..."
@@ -241,17 +259,30 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
         </div>
 
         {/* Search Results Info */}
-        {(searchTerm || selectedRole !== "All") && !isLoading && !error && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              Hiển thị {filteredUsers.length} kết quả
-              {searchTerm && ` cho "${searchTerm}"`}
-              {selectedRole !== "All" &&
-                ` với vai trò ${getRoleDisplayName(selectedRole)}`}{" "}
-              trong {users.length} nhân viên đã tải.
-            </p>
-          </div>
-        )}
+        {(debouncedSearchTerm || selectedRole !== "All") &&
+          !isLoading &&
+          !error && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                {isSearching && (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                )}
+                <p className="text-sm text-blue-800">
+                  {isSearching ? (
+                    "Đang tìm kiếm..."
+                  ) : (
+                    <>
+                      Hiển thị {users.length} kết quả
+                      {debouncedSearchTerm && ` cho "${debouncedSearchTerm}"`}
+                      {selectedRole !== "All" &&
+                        ` với vai trò ${getRoleDisplayName(selectedRole)}`}{" "}
+                      trong {users.length} nhân viên đã tải.
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
 
         {/* Loading State */}
         {isLoading && (
@@ -285,7 +316,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
         {/* Users Grid */}
         {!isLoading && !error && (
           <div className="mobile-grid mb-6 sm:mb-8">
-            {filteredUsers.map((user, index) => {
+            {users.map((user, index) => {
               const RoleIcon = roleIcons[user.role] || User;
               return (
                 <div
@@ -296,9 +327,9 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {user.avatar_url ? (
+                        {user.avatar && user.avatar.public_url ? (
                           <img
-                            src={user.avatar_url}
+                            src={user.avatar.public_url}
                             alt={user.name}
                             className="w-full h-full rounded-full object-cover"
                             onError={(e) => {
@@ -313,7 +344,9 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
                         ) : null}
                         <User
                           className={`w-6 h-6 text-gray-500 ${
-                            user.avatar_url ? "hidden" : ""
+                            user.avatar && user.avatar.public_url
+                              ? "hidden"
+                              : ""
                           }`}
                         />
                       </div>
@@ -420,7 +453,7 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && filteredUsers.length === 0 && (
+        {!isLoading && !error && users.length === 0 && (
           <div className="text-center py-12">
             <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <User className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
@@ -429,19 +462,22 @@ const EmployeeManagementScreen: React.FC<EmployeeManagementScreenProps> = ({
               Không tìm thấy nhân viên
             </h3>
             <p className="text-gray-500 mb-6 text-sm sm:text-base">
-              {users.length === 0
-                ? "Chưa có nhân viên nào trong hệ thống"
-                : "Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc vai trò"}
+              {debouncedSearchTerm || selectedRole !== "All"
+                ? "Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc vai trò"
+                : "Chưa có nhân viên nào trong hệ thống"}
             </p>
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedRole("All");
-              }}
-              className="btn-secondary"
-            >
-              Xóa bộ lọc
-            </button>
+            {(debouncedSearchTerm || selectedRole !== "All") && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setDebouncedSearchTerm("");
+                  setSelectedRole("All");
+                }}
+                className="btn-secondary"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
           </div>
         )}
 

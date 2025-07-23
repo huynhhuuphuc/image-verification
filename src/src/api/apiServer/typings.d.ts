@@ -2,6 +2,12 @@ declare namespace Api {
   interface ListParams {
     skip: number;
     limit: number;
+    role?: string;
+    keyword?: string;
+  }
+  interface ProductParams {
+    skip: number;
+    limit: number;
   }
   type UserProps = {
     id: number;
@@ -9,18 +15,24 @@ declare namespace Api {
     name: string;
     email: string;
     role: string;
-    avatar_url: string | null;
+    avatar: {
+      path: string;
+      public_url: string;
+    } | null;
     created_at?: string;
   };
   type UserUpdateProps = {
     email: string;
     name: string;
     role: string;
-    avatar_url: string | null;
+    avatar_url: string;
   };
   type ListUsersResponse = {
     users: UserProps[];
     total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
   };
   type UserByEmailProps = {
     email: string;
@@ -30,8 +42,49 @@ declare namespace Api {
     avatar_url: string;
   };
   type UploadResponse = {
-    id: number;
+    content_type: string;
     file_path: string;
-    file_url: string;
+    filename: string;
+    public_url: string;
+    upload_type: string;
+    uploaded_by: string;
+  };
+  type ProductResponse = {
+    products: ProductProps[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  };
+  type ProductProps = {
+    id: number;
+    product_code: string;
+    name: string;
+    category: string;
+    description: string;
+    avatar: {
+      path: string;
+      public_url: string;
+    };
+    sample_image: {
+      path: string;
+      public_url: string;
+    };
+    created_at: string;
+  };
+  type ProductCreateProps = {
+    product_code: string;
+    name: string;
+    category: string;
+    description: string;
+    avatar_url: string;
+    sample_image_url: string;
+  };
+  type ProductUpdateProps = {
+    name: string;
+    category: string;
+    description: string;
+    avatar_url: string;
+    sample_image_url: string;
   };
 }

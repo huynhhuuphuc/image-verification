@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Upload,
@@ -8,78 +8,108 @@ import {
   Save,
   X,
   Menu,
-  ImageIcon
-} from 'lucide-react';
-import { mockCategories } from '../data/mockData';
+  ImageIcon,
+} from "lucide-react";
+import { mockCategories } from "../data/mockData";
+import { createProduct } from "../src/api/apiServer/apiProduct";
+import { uploadFile } from "../src/api/apiServer/apiUpload";
 
 interface AddProductScreenProps {
   onToggleSidebar: () => void;
 }
 
-const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) => {
+const AddProductScreen: React.FC<AddProductScreenProps> = ({
+  onToggleSidebar,
+}) => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    description: '',
-    code: ''
+    name: "",
+    category: "",
+    description: "",
+    code: "",
+    avatar_url: "",
+    sample_image_url: "",
   });
 
-  const [images, setImages] = useState({
-    representative: null as string | null,
-    sample: null as string | null
+  const [images, setImages] = useState<{
+    representative: File | null;
+    sample: File | null;
+  }>({
+    representative: null,
+    sample: null,
+  });
+  const [imagePreview, setImagePreview] = useState<{
+    representative: string | null;
+    sample: string | null;
+  }>({
+    representative: null,
+    sample: null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  const handleImageUpload = (type: 'representative' | 'sample') => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImages(prev => ({ ...prev, [type]: e.target?.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleImageUpload =
+    (type: "representative" | "sample") =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        setImages((prev) => ({
+          ...prev,
+          [type]: file,
+        }));
+        const previewUrl = URL.createObjectURL(file);
+        setImagePreview((prev) => ({
+          ...prev,
+          [type]: previewUrl,
+        }));
+        setImages((prev) => ({
+          ...prev,
+          [type]: file,
+        }));
+      }
+    };
 
-  const removeImage = (type: 'representative' | 'sample') => {
-    setImages(prev => ({ ...prev, [type]: null }));
+  const removeImage = (type: "representative" | "sample") => {
+    setImages((prev) => ({ ...prev, [type]: null }));
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.code.trim()) {
-      newErrors.code = 'Mã sản phẩm là bắt buộc';
+      newErrors.code = "Mã sản phẩm là bắt buộc";
     }
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Tên sản phẩm là bắt buộc';
+      newErrors.name = "Tên sản phẩm là bắt buộc";
     }
 
     if (!formData.category) {
-      newErrors.category = 'Danh mục là bắt buộc';
+      newErrors.category = "Danh mục là bắt buộc";
     }
 
     if (!images.representative) {
-      newErrors.representative = 'Ảnh đại diện là bắt buộc';
+      newErrors.representative = "Ảnh đại diện là bắt buộc";
     }
 
     if (!images.sample) {
-      newErrors.sample = 'Ảnh mẫu thiết kế là bắt buộc';
+      newErrors.sample = "Ảnh mẫu thiết kế là bắt buộc";
     }
 
     setErrors(newErrors);
@@ -97,23 +127,44 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
 
     // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
+      let finalAvatarUrl = formData.avatar_url || "";
+      let finalSampleImageUrl = formData.sample_image_url || "";
+      // await new Promise(resolve => setTimeout(resolve, 2000));
+      if (images.representative) {
+        const response = await uploadFile(images.representative, "products");
+        console.log("response", response);
+        finalAvatarUrl = response.file_path;
+      }
+      if (images.sample) {
+        const response = await uploadFile(images.sample, "products");
+        console.log("response", response);
+        finalSampleImageUrl = response.file_path;
+      }
+      const requestBody = {
+        product_code: formData.code,
+        name: formData.name,
+        // category: formData.category,
+        category: "FOOD",
+        avatar_url: finalAvatarUrl,
+        sample_image_url: finalSampleImageUrl,
+      };
+      const response = await createProduct(requestBody);
+      console.log("response", response);
       // Navigate back to products list with success message
-      navigate('/products', {
+      navigate("/products", {
         state: {
           message: `Sản phẩm "${formData.name}" đã được thêm thành công!`,
-          type: 'success'
-        }
+          type: "success",
+        },
       });
     } catch (error) {
-      console.error('Error adding product:', error);
+      console.error("Error adding product:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const availableCategories = mockCategories.filter(cat => cat.id !== 'all');
+  const availableCategories = mockCategories.filter((cat) => cat.id !== "all");
 
   return (
     <div className="w-full min-h-full">
@@ -147,8 +198,12 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Thêm sản phẩm mới</h1>
-            <p className="text-gray-600 text-sm sm:text-base">Tạo sản phẩm mới cho hệ thống kiểm tra nhãn mác</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              Thêm sản phẩm mới
+            </h1>
+            <p className="text-gray-600 text-sm sm:text-base">
+              Tạo sản phẩm mới cho hệ thống kiểm tra nhãn mác
+            </p>
           </div>
         </div>
 
@@ -159,13 +214,18 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Package className="w-4 h-4 text-blue-600" />
               </div>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Thông tin cơ bản</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                Thông tin cơ bản
+              </h2>
             </div>
 
             <div className="space-y-4 sm:space-y-6">
               {/* Product Code */}
               <div>
-                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="code"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   ID <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -175,7 +235,11 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                   value={formData.code}
                   onChange={handleInputChange}
                   placeholder="Nhập ID..."
-                  className={`input-field ${errors.code ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
+                  className={`input-field ${
+                    errors.code
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                      : ""
+                  }`}
                 />
                 {errors.code && (
                   <p className="mt-1 text-xs text-red-600">{errors.code}</p>
@@ -183,7 +247,10 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
               </div>
               {/* Product Name */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Tên sản phẩm <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -193,7 +260,11 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="Nhập tên sản phẩm..."
-                  className={`input-field ${errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
+                  className={`input-field ${
+                    errors.name
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                      : ""
+                  }`}
                 />
                 {errors.name && (
                   <p className="mt-1 text-xs text-red-600">{errors.name}</p>
@@ -202,7 +273,10 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
 
               {/* Category */}
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="category"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Danh mục <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -211,7 +285,11 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                   value={formData.category}
                   onChange={handleInputChange}
                   className={`w-full h-[46px] rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-      ${errors.category ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
+      ${
+        errors.category
+          ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+          : ""
+      }`}
                 >
                   <option value="">Chọn danh mục...</option>
                   {availableCategories.map((category) => (
@@ -227,7 +305,10 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
 
               {/* Description */}
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Mô tả (tùy chọn)
                 </label>
                 <textarea
@@ -249,7 +330,9 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
               <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                 <ImageIcon className="w-4 h-4 text-purple-600" />
               </div>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Hình ảnh sản phẩm</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                Hình ảnh sản phẩm
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -263,15 +346,19 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <Upload className="w-5 h-5 text-gray-400" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900 mb-1">Tải lên ảnh đại diện</p>
-                    <p className="text-xs text-gray-500 mb-3">PNG, JPG lên đến 10MB</p>
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      Tải lên ảnh đại diện
+                    </p>
+                    <p className="text-xs text-gray-500 mb-3">
+                      jpeg, jpg, png lên đến 20MB
+                    </p>
                     <label className="btn-primary cursor-pointer text-sm flex items-center justify-center">
                       <Camera className="w-4 h-4 mr-2" />
                       Chọn ảnh
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={handleImageUpload('representative')}
+                        onChange={handleImageUpload("representative")}
                         className="hidden"
                       />
                     </label>
@@ -279,13 +366,13 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                 ) : (
                   <div className="relative">
                     <img
-                      src={images.representative}
+                      src={imagePreview.representative ?? undefined}
                       alt="Ảnh đại diện"
                       className="w-full h-48 object-cover rounded-lg"
                     />
                     <button
                       type="button"
-                      onClick={() => removeImage('representative')}
+                      onClick={() => removeImage("representative")}
                       className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
                     >
                       <X className="w-3 h-3" />
@@ -293,7 +380,9 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                   </div>
                 )}
                 {errors.representative && (
-                  <p className="mt-1 text-xs text-red-600">{errors.representative}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.representative}
+                  </p>
                 )}
               </div>
 
@@ -307,15 +396,19 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <Upload className="w-5 h-5 text-gray-400" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900 mb-1">Tải lên ảnh mẫu thiết kế</p>
-                    <p className="text-xs text-gray-500 mb-3">PNG, JPG lên đến 10MB</p>
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      Tải lên ảnh mẫu thiết kế
+                    </p>
+                    <p className="text-xs text-gray-500 mb-3">
+                      PNG, JPG lên đến 10MB
+                    </p>
                     <label className="btn-primary cursor-pointer text-sm flex items-center justify-center">
                       <Camera className="w-4 h-4 mr-2" />
                       Chọn ảnh
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={handleImageUpload('sample')}
+                        onChange={handleImageUpload("sample")}
                         className="hidden"
                       />
                     </label>
@@ -323,13 +416,13 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
                 ) : (
                   <div className="relative">
                     <img
-                      src={images.sample}
+                      src={imagePreview.sample ?? undefined}
                       alt="Ảnh mẫu thiết kế"
                       className="w-full h-48 object-cover rounded-lg"
                     />
                     <button
                       type="button"
-                      onClick={() => removeImage('sample')}
+                      onClick={() => removeImage("sample")}
                       className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
                     >
                       <X className="w-3 h-3" />
@@ -344,7 +437,9 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
 
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
               <p className="text-xs sm:text-sm text-blue-700">
-                <strong>Lưu ý:</strong> Ảnh đại diện sẽ hiển thị trong danh sách sản phẩm. Ảnh mẫu thiết kế là chuẩn để so sánh với ảnh in thực tế.
+                <strong>Lưu ý:</strong> Ảnh đại diện sẽ hiển thị trong danh sách
+                sản phẩm. Ảnh mẫu thiết kế là chuẩn để so sánh với ảnh in thực
+                tế.
               </p>
             </div>
           </div>
@@ -381,4 +476,4 @@ const AddProductScreen: React.FC<AddProductScreenProps> = ({ onToggleSidebar }) 
   );
 };
 
-export default AddProductScreen; 
+export default AddProductScreen;

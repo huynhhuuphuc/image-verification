@@ -54,7 +54,7 @@ const UserModal: React.FC<UserModalProps> = ({
         name: userToEdit.name,
         employee_code: userToEdit.employee_code,
         role: userToEdit.role,
-        avatar_url: userToEdit.avatar.public_url || "",
+        avatar_url: userToEdit.avatar ? userToEdit.avatar.public_url : "",
       });
     } else {
       // Reset form for adding new user
@@ -122,7 +122,7 @@ const UserModal: React.FC<UserModalProps> = ({
     setIsLoading(true);
 
     try {
-      let finalAvatarUrl = formData.avatar_url; // Keep existing avatar if no new one
+      let finalAvatarUrl = formData.avatar_url || ""; // Keep existing avatar if no new one
 
       // Upload new image if selected
       if (images.representative) {
@@ -150,7 +150,9 @@ const UserModal: React.FC<UserModalProps> = ({
           email: dataToSend.email,
           name: dataToSend.name,
           role: dataToSend.role,
-          avatar_url: finalAvatarUrl,
+          avatar_url: images.representative
+            ? finalAvatarUrl
+            : userToEdit.avatar?.path || "",
         };
         console.log("Updating user:", userToEdit.id, "with data:", updateData);
         await updateUser(updateData);

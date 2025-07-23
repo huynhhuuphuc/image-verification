@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiProduct } from "../src/api/apiServer";
 
 interface UseProductFormProps {
@@ -15,27 +15,27 @@ export const useProductForm = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async (
-    page: number = currentPage,
-    limit: number = productsPerPage
-  ) => {
-    try {
-      setIsLoading(true);
-      const response = await apiProduct.getListAllProducts({
-        skip: (page - 1) * limit,
-        limit,
-      });
-      setProducts(response.data.products || []);
-      setTotalProducts(response.data.total || 0);
-      setCurrentPage(page);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const fetchProducts = useCallback(
+    async (page: number = currentPage, limit: number = productsPerPage) => {
+      try {
+        setIsLoading(true);
+        const response = await apiProduct.getListAllProducts({
+          skip: (page - 1) * limit,
+          limit,
+        });
+        setProducts(response.products || []);
+        setTotalProducts(response.total || 0);
+        setCurrentPage(page);
+      } catch (error) {
+        setError(
+          error instanceof Error ? error.message : "An unknown error occurred"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [currentPage, productsPerPage]
+  );
 
   const refreshProducts = () => {
     fetchProducts(currentPage, productsPerPage);

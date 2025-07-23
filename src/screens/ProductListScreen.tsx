@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Search, Filter, Calendar, Eye, Menu } from "lucide-react";
-import { Link, Outlet } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { mockProducts, mockCategories } from "../data/mockData";
 import { useProductForm } from "../hooks/useProductForm";
 
@@ -25,7 +25,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+  }, []);
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory =
@@ -46,7 +46,6 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
 
   return (
     <div className="w-full min-h-full">
-      <Outlet />
       <div className="mobile-container py-4 sm:py-6 max-w-7xl mx-auto pb-8">
         {/* Mobile Header with Hamburger */}
         <div className="flex items-center justify-between mb-6 bg-white sticky top-0 z-10 sm:hidden">
@@ -131,7 +130,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
               <Link to={`/products/${product.id}`} className="block">
                 <div className="aspect-square rounded-lg overflow-hidden mb-3 sm:mb-4 bg-gray-100">
                   <img
-                    src={product.avatar.public_url}
+                    src={product.sample_image.public_url}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -200,45 +199,6 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
             </button>
           </div>
         )}
-
-        {/* Statistics */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-xs sm:text-sm">Tổng sản phẩm</p>
-                <p className="text-xl sm:text-2xl font-bold">{mockProducts.length}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-xs sm:text-sm">Đang hiển thị</p>
-                <p className="text-xl sm:text-2xl font-bold">{filteredProducts.length}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <Eye className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl p-4 sm:p-6 md:col-span-1 col-span-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-xs sm:text-sm">Danh mục</p>
-                <p className="text-xl sm:text-2xl font-bold">{mockCategories.length - 1}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <Filter className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-        </div> */}
       </div>
     </div>
   );

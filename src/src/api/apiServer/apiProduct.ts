@@ -10,3 +10,14 @@ export const getListAllProducts = async (
   });
   return response.data;
 };
+
+export const createProduct = async (
+  product: Api.ProductCreateProps
+): Promise<Api.ProductProps> => {
+  const response = await request({
+    url: "/products",
+    method: "POST",
+    data: product,
+  });
+  return response.data;
+};

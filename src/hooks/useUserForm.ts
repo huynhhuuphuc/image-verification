@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getListAllUsers, removeUser } from "../src/api/apiServer/apiUser";
 import toast from "react-hot-toast";
 import ROLE from "../src/utils/role";
@@ -22,9 +22,14 @@ interface UseUserFormReturn {
   error: string | null;
 
   // Actions
-  fetchUsers: (page?: number, limit?: number) => Promise<void>;
+  fetchUsers: (
+    page?: number,
+    limit?: number,
+    role?: "ADMIN" | "EMPLOYEE",
+    keyword?: string
+  ) => Promise<void>;
   deleteUser: (email: string) => Promise<void>;
-  refreshUsers: (role?: "ADMIN" | "EMPLOYEE") => void;
+  refreshUsers: (role?: "ADMIN" | "EMPLOYEE", keyword?: string) => void;
   setCurrentPage: (page: number) => void;
 
   // Computed values
@@ -48,32 +53,37 @@ export const useUserForm = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUsers = async (
-    page: number = currentPage,
-    limit: number = usersPerPage,
-    role?: "ADMIN" | "EMPLOYEE"
-  ) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const fetchUsers = useCallback(
+    async (
+      page: number = currentPage,
+      limit: number = usersPerPage,
+      role?: "ADMIN" | "EMPLOYEE",
+      keyword?: string
+    ) => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const params: Api.ListParams = {
-        skip: (page - 1) * limit,
-        limit: limit,
-        ...(role && { role }),
-      };
+        const params: Api.ListParams = {
+          skip: (page - 1) * limit,
+          limit: limit,
+          ...(role && { role }),
+          ...(keyword && { keyword }),
+        };
 
-      const response = await getListAllUsers(params);
+        const response = await getListAllUsers(params);
 
-      setUsers(response.users || []);
-      setTotalUsers(response.total || 0);
-    } catch (error) {
-      setError("Không thể tải danh sách nhân viên. Vui lòng thử lại.");
-      toast.error("Lỗi khi tải danh sách nhân viên");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        setUsers(response.users || []);
+        setTotalUsers(response.total || 0);
+      } catch (error) {
+        setError("Không thể tải danh sách nhân viên. Vui lòng thử lại.");
+        toast.error("Lỗi khi tải danh sách nhân viên");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [currentPage, usersPerPage]
+  );
 
   const deleteUser = async (email: string) => {
     setIsDeleting(true);
@@ -90,9 +100,12 @@ export const useUserForm = ({
     }
   };
 
-  const refreshUsers = (role?: "ADMIN" | "EMPLOYEE") => {
-    fetchUsers(currentPage, usersPerPage, role);
-  };
+  const refreshUsers = useCallback(
+    (role?: "ADMIN" | "EMPLOYEE", keyword?: string) => {
+      fetchUsers(currentPage, usersPerPage, role, keyword);
+    },
+    [fetchUsers, currentPage, usersPerPage]
+  );
 
   // Calculate statistics
   const stats = {
@@ -105,8 +118,8 @@ export const useUserForm = ({
 
   // Initial load
   useEffect(() => {
-    fetchUsers(currentPage, usersPerPage);
-  }, [currentPage, usersPerPage]);
+    fetchUsers();
+  }, [fetchUsers]);
 
   return {
     // Data

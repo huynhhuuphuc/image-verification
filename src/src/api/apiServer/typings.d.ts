@@ -3,6 +3,7 @@ declare namespace Api {
     skip: number;
     limit: number;
     role?: string;
+    keyword?: string;
   }
   interface ProductParams {
     skip: number;
@@ -17,7 +18,7 @@ declare namespace Api {
     avatar: {
       path: string;
       public_url: string;
-    };
+    } | null;
     created_at?: string;
   };
   type UserUpdateProps = {
@@ -29,6 +30,9 @@ declare namespace Api {
   type ListUsersResponse = {
     users: UserProps[];
     total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
   };
   type UserByEmailProps = {
     email: string;
@@ -38,21 +42,19 @@ declare namespace Api {
     avatar_url: string;
   };
   type UploadResponse = {
-    id: number;
+    content_type: string;
     file_path: string;
-    file_url: string;
+    filename: string;
+    public_url: string;
+    upload_type: string;
+    uploaded_by: string;
   };
   type ProductResponse = {
-    status: string;
-    message: string;
-    data: {
-      products: ProductProps[];
-      total: number;
-      page: number;
-      per_page: number;
-      total_pages: number;
-    };
-    error_code: string;
+    products: ProductProps[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
   };
   type ProductProps = {
     id: number;
@@ -63,6 +65,17 @@ declare namespace Api {
       path: string;
       public_url: string;
     };
+    sample_image: {
+      path: string;
+      public_url: string;
+    };
     created_at: string;
+  };
+  type ProductCreateProps = {
+    product_code: string;
+    name: string;
+    category: string;
+    avatar_url: string;
+    sample_image_url: string;
   };
 }

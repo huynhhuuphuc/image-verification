@@ -287,7 +287,10 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="space-y-2">
-                  <Link to={`/products/${product.id}`} className="block">
+                  <Link
+                    to={`/products/${product.product_code}`}
+                    className="block"
+                  >
                     <div className="aspect-square rounded-lg overflow-hidden mb-3 sm:mb-4 bg-gray-100">
                       <img
                         src={product.sample_image.public_url}

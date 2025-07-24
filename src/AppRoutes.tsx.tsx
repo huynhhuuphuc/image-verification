@@ -130,7 +130,7 @@ const AppRoutes: React.FC<{
                       }
                     />
                     <Route
-                      path="/products/:id"
+                      path="/products/:productCode"
                       element={
                         <ProductDetailScreen
                           onToggleSidebar={onToggleSidebar}

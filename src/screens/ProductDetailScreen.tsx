@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -6,240 +6,27 @@ import {
   Camera,
   CheckCircle,
   AlertTriangle,
-  Calendar,
   Clock,
   FileImage,
   Zap,
-  Eye,
   Menu,
   X,
   ZoomIn,
   Download,
-  Trash2,
+  Loader2,
 } from "lucide-react";
-import { mockProducts, mockInspections } from "../data/mockData";
 import PreviewModal from "../components/PreviewModal";
+import {
+  getProductByProductCode,
+  getInspectionByInspectionCode,
+  getDetailInspection,
+} from "../src/api/apiServer/apiProduct";
+import { isInspectionPassed } from "../src/utils/validation";
+import InspectionDetailModal from "../components/InspectionDetailModal";
 
 interface ProductDetailScreenProps {
   onToggleSidebar: () => void;
 }
-
-interface InspectionDetailModalProps {
-  inspection: any;
-  onClose: () => void;
-}
-
-const InspectionDetailModal: React.FC<InspectionDetailModalProps> = ({
-  inspection,
-  onClose,
-}) => {
-  const [previewImage, setPreviewImage] = useState<{
-    url: string;
-    alt: string;
-  } | null>(null);
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              Chi tiết kiểm tra
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-6 space-y-6">
-          {/* Inspection Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div>
-                <span className="text-sm text-gray-500">
-                  Thời gian kiểm tra:
-                </span>
-                <p className="font-medium text-gray-900">
-                  {inspection.timestamp.toLocaleDateString("vi-VN", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500">Kết quả:</span>
-                <div className="flex items-center space-x-2 mt-1">
-                  {inspection.status === "Passed" ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                  )}
-                  <span
-                    className={`font-medium ${
-                      inspection.status === "Passed"
-                        ? "text-green-800"
-                        : "text-red-800"
-                    }`}
-                  >
-                    {inspection.status === "Passed" ? "Thành công" : "Có lỗi"}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500">Độ tin cậy:</span>
-                <p className="font-medium text-gray-900">
-                  {inspection.confidence}%
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <span className="text-sm text-gray-500">Người thực hiện:</span>
-                <p className="font-medium text-gray-900">
-                  {inspection.inspector || "Hệ thống AI"}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-500">ID kiểm tra:</span>
-                <p className="font-mono text-sm text-gray-600">
-                  {inspection.id}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Analysis */}
-          {inspection.aiAnalysis && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-medium text-gray-900 mb-2">Phân tích AI:</h3>
-              <p className="text-sm text-gray-700">{inspection.aiAnalysis}</p>
-            </div>
-          )}
-
-          {/* Differences */}
-          {inspection.differences && inspection.differences.length > 0 && (
-            <div>
-              <h3 className="font-medium text-gray-900 mb-3">
-                Các khác biệt phát hiện:
-              </h3>
-              <div className="space-y-2">
-                {inspection.differences.map((diff: string, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-start space-x-2 p-3 bg-red-50 rounded-lg"
-                  >
-                    <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-red-800">{diff}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Images Comparison */}
-          <div>
-            <h3 className="font-medium text-gray-900 mb-3">
-              So sánh hình ảnh:
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Ảnh mẫu chuẩn:</p>
-                <div className="relative group">
-                  <img
-                    src={
-                      inspection.standardImage || "https://placehold.co/400x300"
-                    }
-                    alt="Ảnh mẫu chuẩn"
-                    className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:brightness-110 transition-all duration-200"
-                    onClick={() =>
-                      setPreviewImage({
-                        url:
-                          inspection.standardImage ||
-                          "https://placehold.co/400x300",
-                        alt: "Ảnh mẫu chuẩn",
-                      })
-                    }
-                  />
-                  <div
-                    className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setPreviewImage({
-                        url:
-                          inspection.standardImage ||
-                          "https://placehold.co/400x300",
-                        alt: "Ảnh mẫu chuẩn",
-                      });
-                    }}
-                  >
-                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer" />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Ảnh kiểm tra:</p>
-                <div className="relative group">
-                  <img
-                    src={
-                      inspection.testImageUrl ||
-                      inspection.testImage ||
-                      "https://placehold.co/400x300"
-                    }
-                    alt="Ảnh kiểm tra"
-                    className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:brightness-110 transition-all duration-200"
-                    onClick={() =>
-                      setPreviewImage({
-                        url:
-                          inspection.testImageUrl ||
-                          inspection.testImage ||
-                          "https://placehold.co/400x300",
-                        alt: "Ảnh kiểm tra",
-                      })
-                    }
-                  />
-                  <div
-                    className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setPreviewImage({
-                        url:
-                          inspection.testImageUrl ||
-                          inspection.testImage ||
-                          "https://placehold.co/400x300",
-                        alt: "Ảnh kiểm tra",
-                      });
-                    }}
-                  >
-                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Image Preview Modal */}
-      {previewImage && (
-        <PreviewModal
-          imageUrl={previewImage.url}
-          imageAlt={previewImage.alt}
-          onClose={() => setPreviewImage(null)}
-        />
-      )}
-    </div>
-  );
-};
 
 interface UploadedImage {
   id: string;
@@ -253,22 +40,105 @@ interface UploadedImage {
 const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   onToggleSidebar,
 }) => {
-  const { id } = useParams<{ id: string }>();
+  const { productCode } = useParams();
+  console.log("productCode", productCode);
+  const [product, setProduct] = useState<Api.ProductProps | null>(null);
+  const [inspectionsCode, setInspectionsCode] = useState<Api.InspectionProps[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
-  const [selectedInspection, setSelectedInspection] = useState<any>(null);
+  const [selectedInspection, setSelectedInspection] =
+    useState<Api.InspectionProps | null>(null);
   const [previewImage, setPreviewImage] = useState<{
     url: string;
     alt: string;
   } | null>(null);
 
-  const product = mockProducts.find((p) => p.id === id);
-  const inspections = mockInspections.filter((i) => i.productId === id);
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!productCode) {
+        console.log("No product ID provided");
+        return;
+      }
 
-  if (!product) {
+      console.log("Fetching data for product ID:", productCode);
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch product details by product code
+        console.log("Calling getProductByProductCode with ID:", productCode);
+        const productData = await getProductByProductCode(productCode);
+        console.log("Product data received:", productData);
+        setProduct(productData);
+
+        // Fetch inspection history for this product
+        console.log(
+          "Calling getInspectionByInspectionCode for product:",
+          productCode
+        );
+        try {
+          const inspectionData = (await getInspectionByInspectionCode(
+            productCode
+          )) as any;
+          console.log("Inspection history received:", inspectionData);
+
+          // Handle API response format - extract inspections array from response
+          if (
+            inspectionData &&
+            inspectionData.inspections &&
+            Array.isArray(inspectionData.inspections)
+          ) {
+            console.log(
+              "Processed inspection history for product:",
+              inspectionData.inspections
+            );
+            setInspectionsCode(inspectionData.inspections);
+          } else {
+            console.log("No inspection history found for product");
+            setInspectionsCode([]);
+          }
+        } catch (inspectionError) {
+          console.log(
+            "No inspection history found for this product or API error:",
+            inspectionError
+          );
+          setInspectionsCode([]);
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError(
+          `Không thể tải dữ liệu sản phẩm: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [productCode]);
+
+  if (loading) {
+    return (
+      <div className="mobile-container py-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-4" />
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="mobile-container py-6 text-center">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
-          Không tìm thấy sản phẩm
+          {error || "Không tìm thấy sản phẩm"}
         </h2>
         <Link to="/products" className="btn-primary">
           Quay lại danh sách
@@ -333,12 +203,23 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
     setUploadedImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
+  const handleInspectionClick = async (inspectionCode: string) => {
+    try {
+      console.log("Fetching detailed inspection for code:", inspectionCode);
+      const detailedInspection = await getDetailInspection(inspectionCode);
+      console.log("Detailed inspection received:", detailedInspection);
+      setSelectedInspection(detailedInspection);
+    } catch (error) {
+      console.error("Error fetching inspection details:", error);
+    }
+  };
+
   const exportToExcel = () => {
-    // Combine existing inspections and new uploaded images with results
+    // Combine existing inspectionsCode and new uploaded images with results
     const uploadedResults = uploadedImages
       .filter((img) => img.analysisResult)
       .map((img) => ({
-        "Product ID": product?.id || "",
+        "Product ID": product?.product_code || "",
         "Product Name": product?.name || "",
         "Test Time": img.uploadTime.toLocaleDateString("vi-VN", {
           day: "2-digit",
@@ -355,27 +236,27 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
         Source: "Mới tải lên",
       }));
 
-    const existingInspections = inspections.map((inspection, index) => ({
-      "Product ID": product?.id || "",
+    const existingInspections = inspectionsCode.map((inspection, index) => ({
+      "Product ID": product?.product_code || "",
       "Product Name": product?.name || "",
-      "Test Time": inspection.timestamp.toLocaleDateString("vi-VN", {
+      "Test Time": new Date(inspection.created_at).toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
       }),
-      "Test Conclusion": inspection.aiAnalysis || "",
-      "Test Status": inspection.status === "Passed" ? "Thành công" : "Có lỗi",
-      Tester: inspection.inspector || "Hệ thống AI",
-      Confidence: `${inspection.confidence}%`,
+      "Test Conclusion": inspection.ai_conclusion || "",
+      "Test Status": isInspectionPassed(inspection.status)
+        ? "Thành công"
+        : "Có lỗi",
+      Tester: inspection.inspector_email || "Hệ thống AI",
+      Confidence: "95%",
       Source: "Lịch sử",
     }));
 
-    // Combine all data, newest first
     const excelData = [...uploadedResults, ...existingInspections];
 
-    // Convert to CSV format (simple Excel export)
     const csvContent = [
       // Headers
       [
@@ -415,8 +296,8 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
     link.click();
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("vi-VN", {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -485,12 +366,17 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                   </label>
                   <div className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border">
                     <img
-                      src={product.image}
+                      src={
+                        product.avatar?.public_url ||
+                        "https://placehold.co/400x400"
+                      }
                       alt={`${product.name} - Ảnh đại diện`}
                       className="w-full h-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
                       onClick={() =>
                         setPreviewImage({
-                          url: product.image,
+                          url:
+                            product.avatar?.public_url ||
+                            "https://placehold.co/400x400",
                           alt: `${product.name} - Ảnh đại diện`,
                         })
                       }
@@ -501,7 +387,9 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                         e.preventDefault();
                         e.stopPropagation();
                         setPreviewImage({
-                          url: product.image,
+                          url:
+                            product.avatar?.public_url ||
+                            "https://placehold.co/400x400",
                           alt: product.name,
                         });
                       }}
@@ -518,12 +406,17 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                   </label>
                   <div className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border">
                     <img
-                      src={product.sampleImage || product.image}
+                      src={
+                        product.sample_image?.public_url ||
+                        "https://placehold.co/400x400"
+                      }
                       alt={`${product.name} - Mẫu thiết kế`}
                       className="w-full h-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
                       onClick={() =>
                         setPreviewImage({
-                          url: product.sampleImage || product.image,
+                          url:
+                            product.sample_image?.public_url ||
+                            "https://placehold.co/400x400",
                           alt: `${product.name} - Mẫu thiết kế`,
                         })
                       }
@@ -534,7 +427,9 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                         e.preventDefault();
                         e.stopPropagation();
                         setPreviewImage({
-                          url: product.sampleImage || product.image,
+                          url:
+                            product.sample_image?.public_url ||
+                            "https://placehold.co/400x400",
                           alt: `${product.name} - Mẫu thiết kế`,
                         });
                       }}
@@ -795,7 +690,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                   Lịch sử kiểm tra
                 </h3>
-                {inspections.length > 0 && (
+                {inspectionsCode.length > 0 && (
                   <button
                     onClick={exportToExcel}
                     className="btn-secondary text-xs sm:text-sm py-2 px-3 flex items-center space-x-2"
@@ -806,7 +701,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                 )}
               </div>
 
-              {inspections.length > 0 ||
+              {inspectionsCode.length > 0 ||
               uploadedImages.some((img) => img.analysisResult) ? (
                 <div className="space-y-3 sm:space-y-4">
                   {/* Recent Uploaded Images Results */}
@@ -884,10 +779,12 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                     ))}
 
                   {/* Existing Inspection History */}
-                  {inspections.map((inspection) => (
+                  {inspectionsCode.map((inspection) => (
                     <div
-                      key={inspection.id}
-                      onClick={() => setSelectedInspection(inspection)}
+                      key={inspection.inspection_code}
+                      onClick={() =>
+                        handleInspectionClick(inspection.inspection_code)
+                      }
                       className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
                     >
                       <div className="flex items-start space-x-3">
@@ -895,8 +792,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           <img
                             src={
-                              inspection.testImageUrl ||
-                              inspection.testImage ||
+                              inspection.uploaded_image?.public_url ||
                               "https://placehold.co/100x100"
                             }
                             alt="Ảnh kiểm tra"
@@ -906,19 +802,19 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
-                            {inspection.status === "Passed" ? (
+                            {isInspectionPassed(inspection.status) ? (
                               <CheckCircle className="w-4 h-4 text-green-600" />
                             ) : (
                               <AlertTriangle className="w-4 h-4 text-red-600" />
                             )}
                             <span
                               className={`font-medium text-sm ${
-                                inspection.status === "Passed"
+                                isInspectionPassed(inspection.status)
                                   ? "text-green-800"
                                   : "text-red-800"
                               }`}
                             >
-                              {inspection.status === "Passed"
+                              {isInspectionPassed(inspection.status)
                                 ? "Thành công"
                                 : "Có lỗi"}
                             </span>
@@ -926,12 +822,12 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
                           <div className="flex items-center space-x-1 text-xs text-gray-500 mb-2">
                             <Clock className="w-3 h-3" />
-                            <span>{formatDate(inspection.timestamp)}</span>
+                            <span>{formatDate(inspection.created_at)}</span>
                           </div>
 
-                          {inspection.aiAnalysis && (
+                          {inspection.ai_conclusion && (
                             <p className="text-xs text-gray-700 line-clamp-2">
-                              {inspection.aiAnalysis}
+                              {inspection.ai_conclusion}
                             </p>
                           )}
 
@@ -988,7 +884,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                     Ngày tạo:
                   </span>
                   <span className="font-medium text-gray-900 text-xs sm:text-sm">
-                    {formatDate(product.createdAt)}
+                    {formatDate(product.created_at)}
                   </span>
                 </div>
                 <div className="flex justify-between">

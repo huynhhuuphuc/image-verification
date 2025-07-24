@@ -13,7 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { mockProducts, mockCategories } from "../data/mockData";
+import { CATEGORY_LABELS } from "../data/mockData";
 import { useProductForm } from "../hooks/useProductForm";
 import { useIsAdmin } from "../hooks/useIsAdmin";
 import { getCookie } from "../src/utils/cookie";
@@ -206,7 +206,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                       : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  {category === "All" ? "Tất cả" : category}
+                  {CATEGORY_LABELS[category]}
                   {category === "All" && ` (${stats.totalFromAPI})`}
                   {category === "FOOD" && ` (${stats.categoriesCount.FOOD})`}
                   {category === "BEVERAGE" &&
@@ -239,7 +239,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                       Hiển thị {products.length} kết quả
                       {debouncedSearchTerm && ` cho "${debouncedSearchTerm}"`}
                       {selectedCategory !== "All" &&
-                        ` với danh mục ${selectedCategory}`}{" "}
+                        ` với danh mục ${CATEGORY_LABELS[selectedCategory]}`}{" "}
                       trong {totalProducts} sản phẩm.
                     </>
                   )}
@@ -306,9 +306,9 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0">
                       <span className="capitalize">
                         {
-                          mockCategories.find(
-                            (cat) => cat.id === product.category
-                          )?.name
+                          CATEGORY_LABELS[
+                            product.category as keyof typeof CATEGORY_LABELS
+                          ]
                         }
                       </span>
                       <div className="flex items-center space-x-1">

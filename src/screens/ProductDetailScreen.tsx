@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CATEGORY_LABELS } from "../data/mockData";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -20,6 +21,7 @@ import {
   getProductByProductCode,
   getInspectionByInspectionCode,
   getDetailInspection,
+  compareImageWithAi,
 } from "../src/api/apiServer/apiProduct";
 import { isInspectionPassed } from "../src/utils/validation";
 import InspectionDetailModal from "../components/InspectionDetailModal";
@@ -33,8 +35,10 @@ interface UploadedImage {
   file: string;
   name: string;
   uploadTime: Date;
-  isAnalyzing: boolean;
-  analysisResult: any;
+  isUploading: boolean;
+  uploadStatus: "success" | "failed" | "pending";
+  uploadMessage?: string;
+  originalFile: File;
 }
 
 const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
@@ -147,10 +151,17 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
     );
   }
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
-    if (files && files.length > 0) {
-      Array.from(files).forEach((file) => {
+    if (!files || files.length === 0 || !productCode) return;
+
+    const filesArray = Array.from(files);
+
+    // Create UI entries for each file with preview
+    const imagePromises = filesArray.map((file) => {
+      return new Promise<UploadedImage>((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const newImage: UploadedImage = {
@@ -158,45 +169,82 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
             file: e.target?.result as string,
             name: file.name,
             uploadTime: new Date(),
-            isAnalyzing: true,
-            analysisResult: null,
+            isUploading: true,
+            uploadStatus: "pending",
+            originalFile: file,
           };
-
-          setUploadedImages((prev) => [...prev, newImage]);
-          simulateAIAnalysis(newImage.id);
+          resolve(newImage);
         };
         reader.readAsDataURL(file);
       });
-    }
-  };
+    });
 
-  const simulateAIAnalysis = (imageId: string) => {
-    setTimeout(() => {
-      const result = {
-        status: Math.random() > 0.3 ? "Passed" : "Error",
-        confidence: Math.floor(Math.random() * 10) + 90,
-        analysis:
-          Math.random() > 0.3
-            ? "Nhãn mác khớp hoàn toàn với mẫu thiết kế. Không phát hiện lỗi."
-            : 'Phát hiện lỗi: Thiếu ký tự trong từ "Protein" (hiển thị "Protei"). Màu sắc logo hơi mờ so với mẫu chuẩn.',
-        differences:
-          Math.random() > 0.3
-            ? []
-            : [
-                'Thiếu ký tự "n" trong từ "Protein"',
-                "Logo mờ hơn 15% so với mẫu chuẩn",
-                "QR code hơi nghiêng 2°",
-              ],
-      };
+    // Wait for all images to be processed and add to state
+    const processedImages = await Promise.all(imagePromises);
+    setUploadedImages((prev) => [...prev, ...processedImages]);
+
+    // Call API with all files at once
+    try {
+      const apiResponse = await compareImageWithAi(productCode, filesArray);
+      console.log("Upload response:", apiResponse);
 
       setUploadedImages((prev) =>
-        prev.map((img) =>
-          img.id === imageId
-            ? { ...img, isAnalyzing: false, analysisResult: result }
-            : img
-        )
+        prev.map((img) => {
+          const wasUploaded = apiResponse.uploaded_files?.some(
+            (uploaded) => uploaded.filename === img.name
+          );
+
+          const wasFailed = apiResponse.failed_files?.some(
+            (failed: any) => failed.filename === img.name
+          );
+
+          return {
+            ...img,
+            isUploading: false,
+            uploadStatus: wasUploaded
+              ? "success"
+              : wasFailed
+              ? "failed"
+              : "failed",
+            uploadMessage: wasUploaded ? "Upload successful" : "Upload failed",
+          };
+        })
       );
-    }, 3000);
+
+      // If any files were uploaded successfully, refresh the inspection history
+      if (apiResponse.total_uploaded > 0) {
+        console.log("Refreshing inspection history...");
+        try {
+          const inspectionData = (await getInspectionByInspectionCode(
+            productCode
+          )) as any;
+
+          if (
+            inspectionData &&
+            inspectionData.inspections &&
+            Array.isArray(inspectionData.inspections)
+          ) {
+            setInspectionsCode(inspectionData.inspections);
+            console.log(
+              "Inspection history refreshed:",
+              inspectionData.inspections
+            );
+          }
+        } catch (refreshError) {
+          console.log("Could not refresh inspection history:", refreshError);
+        }
+      }
+    } catch (error) {
+      console.error("Error in upload:", error);
+      setUploadedImages((prev) =>
+        prev.map((img) => ({
+          ...img,
+          isUploading: false,
+          uploadStatus: "failed" as const,
+          uploadMessage: "Upload failed",
+        }))
+      );
+    }
   };
 
   const removeUploadedImage = (imageId: string) => {
@@ -217,7 +265,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   const exportToExcel = () => {
     // Combine existing inspectionsCode and new uploaded images with results
     const uploadedResults = uploadedImages
-      .filter((img) => img.analysisResult)
+      .filter((img) => img.uploadStatus === "success")
       .map((img) => ({
         "Product ID": product?.product_code || "",
         "Product Name": product?.name || "",
@@ -228,11 +276,10 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
           hour: "2-digit",
           minute: "2-digit",
         }),
-        "Test Conclusion": img.analysisResult.analysis || "",
-        "Test Status":
-          img.analysisResult.status === "Passed" ? "Thành công" : "Có lỗi",
+        "Test Conclusion": img.uploadMessage || "Uploaded successfully",
+        "Test Status": "Đã tải lên",
         Tester: "Hệ thống AI",
-        Confidence: `${img.analysisResult.confidence}%`,
+        Confidence: "95%",
         Source: "Mới tải lên",
       }));
 
@@ -511,31 +558,21 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                               <X className="w-3 h-3" />
                             </button>
 
-                            {/* Analysis Status */}
-                            {image.isAnalyzing && (
-                              <div className="absolute bottom-2 left-2 right-2">
-                                <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded flex items-center">
-                                  <Zap className="w-3 h-3 mr-1 animate-pulse" />
-                                  Đang phân tích...
-                                </div>
-                              </div>
-                            )}
-
-                            {image.analysisResult && (
+                            {image.uploadStatus === "success" && (
                               <div className="absolute bottom-2 left-2 right-2">
                                 <div
                                   className={`text-white text-xs px-2 py-1 rounded flex items-center ${
-                                    image.analysisResult.status === "Passed"
+                                    image.uploadStatus === "success"
                                       ? "bg-green-600"
                                       : "bg-red-600"
                                   }`}
                                 >
-                                  {image.analysisResult.status === "Passed" ? (
+                                  {image.uploadStatus === "success" ? (
                                     <CheckCircle className="w-3 h-3 mr-1" />
                                   ) : (
                                     <AlertTriangle className="w-3 h-3 mr-1" />
                                   )}
-                                  {image.analysisResult.status === "Passed"
+                                  {image.uploadStatus === "success"
                                     ? "Thành công"
                                     : "Có lỗi"}
                                 </div>
@@ -562,125 +599,6 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Multiple AI Analysis Results */}
-            {uploadedImages.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-                  Kết quả phân tích AI
-                </h3>
-
-                <div className="space-y-6">
-                  {uploadedImages.map((image) => (
-                    <div
-                      key={image.id}
-                      className="border border-gray-200 rounded-lg p-4"
-                    >
-                      <div className="flex items-center space-x-3 mb-3">
-                        <img
-                          src={image.file}
-                          alt={image.name}
-                          className="w-12 h-12 object-cover rounded-lg"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {image.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {image.uploadTime.toLocaleString("vi-VN")}
-                          </p>
-                        </div>
-                      </div>
-
-                      {image.isAnalyzing ? (
-                        <div className="text-center py-4">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 animate-pulse">
-                            <Zap className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <p className="text-sm text-gray-900 font-medium">
-                            Đang phân tích...
-                          </p>
-                          <div className="mt-2 w-24 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
-                            <div
-                              className="h-full bg-blue-600 rounded-full animate-pulse"
-                              style={{ width: "70%" }}
-                            ></div>
-                          </div>
-                        </div>
-                      ) : (
-                        image.analysisResult && (
-                          <div className="space-y-3">
-                            <div
-                              className={`p-3 rounded-lg ${
-                                image.analysisResult.status === "Passed"
-                                  ? "bg-green-50 border border-green-200"
-                                  : "bg-red-50 border border-red-200"
-                              }`}
-                            >
-                              <div className="flex items-center space-x-2 mb-2">
-                                {image.analysisResult.status === "Passed" ? (
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                                )}
-                                <span
-                                  className={`font-medium text-sm ${
-                                    image.analysisResult.status === "Passed"
-                                      ? "text-green-800"
-                                      : "text-red-800"
-                                  }`}
-                                >
-                                  {image.analysisResult.status === "Passed"
-                                    ? "Kiểm tra thành công"
-                                    : "Phát hiện lỗi"}
-                                </span>
-                                <span className="text-xs text-gray-600">
-                                  ({image.analysisResult.confidence}% độ tin
-                                  cậy)
-                                </span>
-                              </div>
-                              <p
-                                className={`text-sm ${
-                                  image.analysisResult.status === "Passed"
-                                    ? "text-green-700"
-                                    : "text-red-700"
-                                }`}
-                              >
-                                {image.analysisResult.analysis}
-                              </p>
-                            </div>
-
-                            {image.analysisResult.differences &&
-                              image.analysisResult.differences.length > 0 && (
-                                <div className="space-y-2">
-                                  <h4 className="font-medium text-gray-900 text-sm">
-                                    Chi tiết các khác biệt:
-                                  </h4>
-                                  <ul className="space-y-1">
-                                    {image.analysisResult.differences.map(
-                                      (diff: string, index: number) => (
-                                        <li
-                                          key={index}
-                                          className="flex items-start space-x-2 text-sm"
-                                        >
-                                          <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0"></div>
-                                          <span className="text-gray-700">
-                                            {diff}
-                                          </span>
-                                        </li>
-                                      )
-                                    )}
-                                  </ul>
-                                </div>
-                              )}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Column - Inspection History & Product Info */}
@@ -702,82 +620,8 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
               </div>
 
               {inspectionsCode.length > 0 ||
-              uploadedImages.some((img) => img.analysisResult) ? (
-                <div className="space-y-3 sm:space-y-4">
-                  {/* Recent Uploaded Images Results */}
-                  {uploadedImages
-                    .filter((img) => img.analysisResult)
-                    .map((image) => (
-                      <div
-                        key={`upload-${image.id}`}
-                        className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-blue-50 border-blue-200"
-                      >
-                        <div className="flex items-start space-x-3">
-                          {/* Inspection Image */}
-                          <div className="relative group w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                            <img
-                              src={image.file}
-                              alt={image.name}
-                              className="w-full h-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewImage({
-                                  url: image.file,
-                                  alt: image.name,
-                                });
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                              <ZoomIn className="w-3 h-3 text-white opacity-0 group-hover:opacity-100 transition-all duration-200" />
-                            </div>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              {image.analysisResult.status === "Passed" ? (
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                              ) : (
-                                <AlertTriangle className="w-4 h-4 text-red-600" />
-                              )}
-                              <span
-                                className={`font-medium text-sm ${
-                                  image.analysisResult.status === "Passed"
-                                    ? "text-green-800"
-                                    : "text-red-800"
-                                }`}
-                              >
-                                {image.analysisResult.status === "Passed"
-                                  ? "Thành công"
-                                  : "Có lỗi"}
-                              </span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                Mới tải lên
-                              </span>
-                            </div>
-
-                            <div className="flex items-center space-x-1 text-xs text-gray-500 mb-2">
-                              <Clock className="w-3 h-3" />
-                              <span>
-                                {image.uploadTime.toLocaleString("vi-VN")}
-                              </span>
-                            </div>
-
-                            {image.analysisResult.analysis && (
-                              <p className="text-xs text-gray-700 line-clamp-2">
-                                {image.analysisResult.analysis}
-                              </p>
-                            )}
-
-                            <div className="flex items-center space-x-1 text-primary-600 hover:text-primary-700 mt-2">
-                              <span className="text-xs font-medium">
-                                Độ tin cậy: {image.analysisResult.confidence}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
+              uploadedImages.some((img) => img.uploadStatus === "success") ? (
+                <div className="space-y-3 sm:space-y-4 h-[530px] overflow-y-auto pr-2">
                   {/* Existing Inspection History */}
                   {inspectionsCode.map((inspection) => (
                     <div
@@ -876,7 +720,11 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                     Danh mục:
                   </span>
                   <span className="font-medium text-gray-900 capitalize text-xs sm:text-sm">
-                    {product.category}
+                    {
+                      CATEGORY_LABELS[
+                        product.category as keyof typeof CATEGORY_LABELS
+                      ]
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between">

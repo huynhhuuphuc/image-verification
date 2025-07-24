@@ -85,12 +85,18 @@ export const getDetailInspection = async (
 // compare image with ai
 export const compareImageWithAi = async (
   product_code: string,
-  file: File
+  files: File[]
 ): Promise<Api.InspectionUploadAIProps> => {
   const formData = new FormData();
   formData.append("product_code", product_code);
-  formData.append("file", file);
+
+  // Append multiple files
+  files.forEach((file) => {
+    formData.append("files", file);
+  });
+
   formData.append("status", "WAIT");
+
   const response = await request({
     url: `/inspections/upload-multiple`,
     method: "POST",

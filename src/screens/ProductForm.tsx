@@ -76,7 +76,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
           setFormData({
             name: productData.name,
             category: productData.category,
-            descriptions: productData.descriptions,
+            descriptions: productData.descriptions ?? "",
             code: productData.product_code,
             avatar_url: productData.avatar.public_url,
             sample_image_url: productData.sample_image.public_url,

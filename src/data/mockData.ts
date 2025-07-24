@@ -32,6 +32,19 @@ export const mockCategories: ProductCategory[] = [
   { id: "OTHER", name: "OTHER", count: 62 },
 ];
 
+export const CATEGORY_LABELS: Record<
+  "All" | "FOOD" | "BEVERAGE" | "SNACK" | "FROZEN" | "FRESH" | "OTHER",
+  string
+> = {
+  All: "Tất cả",
+  FOOD: "Thực phẩm",
+  BEVERAGE: "Đồ uống",
+  SNACK: "Đồ ăn vặt",
+  FROZEN: "Đông lạnh",
+  FRESH: "Tươi sống",
+  OTHER: "Khác",
+};
+
 export const mockProducts: Product[] = [
   {
     id: "1",

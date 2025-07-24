@@ -8,4 +8,8 @@ const formatJoinDate = (dateString: string) => {
 const emailPattern =
   /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-export { formatJoinDate, emailPattern };
+const isInspectionPassed = (status: string) => {
+  return status === "Passed" || status === "PASS" || status === "SUCCESS";
+};
+
+export { formatJoinDate, emailPattern, isInspectionPassed };

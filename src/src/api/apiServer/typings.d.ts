@@ -89,4 +89,43 @@ declare namespace Api {
     avatar_url: string;
     sample_image_url: string;
   };
+  type InspectionResponse = {
+    inspections: InspectionProps[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  };
+  type InspectionProps = {
+    id: number;
+    inspection_code: string;
+    uploaded_image: {
+      path: string;
+      public_url: string;
+    };
+    sample_image: {
+      path: string;
+      public_url: string;
+    };
+    product_code: string;
+    ai_conclusion: string;
+    status: string;
+    inspector_email: string;
+    created_at: string;
+  };
+  type UploadInspectionAIProps = {
+    filename: string;
+    file_path: string;
+    public_url: string;
+    image_id: string;
+    inspection_code: string;
+    status: string;
+  };
+  type InspectionUploadAIProps = {
+    uploaded_files: UploadInspectionAIProps[];
+    failed_files: [];
+    total_uploaded: number;
+    total_failed: number;
+    inspection_records: string[];
+  };
 }

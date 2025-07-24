@@ -35,7 +35,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
   const [formData, setFormData] = useState({
     name: "",
     category: "",
-    description: "",
+    descriptions: "",
     code: "",
     avatar_url: "",
     sample_image_url: "",
@@ -76,7 +76,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
           setFormData({
             name: productData.name,
             category: productData.category,
-            description: productData.description,
+            descriptions: productData.descriptions,
             code: productData.product_code,
             avatar_url: productData.avatar.public_url,
             sample_image_url: productData.sample_image.public_url,
@@ -183,7 +183,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
 
     const hasTextChanged =
       formData.name !== originalData.name ||
-      formData.category !== originalData.category;
+      formData.category !== originalData.category ||
+      formData.descriptions !== originalData.descriptions;
 
     const hasImageChanged =
       images.representative !== null ||
@@ -230,7 +231,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
         const requestBody: Api.ProductUpdateProps = {
           name: formData.name,
           category: formData.category,
-          description: formData.description,
+          descriptions: formData.descriptions,
           avatar_url: images.representative
             ? finalAvatarUrl
             : originalData?.avatar?.path || "",
@@ -250,7 +251,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
           product_code: formData.code,
           name: formData.name,
           category: formData.category,
-          description: formData.description,
+          descriptions: formData.descriptions,
           avatar_url: finalAvatarUrl,
           sample_image_url: finalSampleImageUrl,
         };
@@ -434,15 +435,15 @@ const ProductForm: React.FC<ProductFormProps> = ({ onToggleSidebar }) => {
               {/* Description */}
               <div>
                 <label
-                  htmlFor="description"
+                  htmlFor="descriptions"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Mô tả (tùy chọn)
                 </label>
                 <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
+                  id="descriptions"
+                  name="descriptions"
+                  value={formData.descriptions}
                   onChange={handleInputChange}
                   rows={3}
                   placeholder="Nhập mô tả sản phẩm..."

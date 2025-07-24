@@ -8,6 +8,8 @@ declare namespace Api {
   interface ProductParams {
     skip: number;
     limit: number;
+    keyword?: string;
+    category?: string;
   }
   type UserProps = {
     id: number;
@@ -61,7 +63,7 @@ declare namespace Api {
     product_code: string;
     name: string;
     category: string;
-    description: string;
+    descriptions: string;
     avatar: {
       path: string;
       public_url: string;
@@ -76,14 +78,14 @@ declare namespace Api {
     product_code: string;
     name: string;
     category: string;
-    description: string;
+    descriptions: string;
     avatar_url: string;
     sample_image_url: string;
   };
   type ProductUpdateProps = {
     name: string;
     category: string;
-    description: string;
+    descriptions: string;
     avatar_url: string;
     sample_image_url: string;
   };

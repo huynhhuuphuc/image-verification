@@ -18,13 +18,30 @@ export const useProductForm = ({
   const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = useCallback(
-    async (page: number = currentPage, limit: number = productsPerPage) => {
+    async (
+      category?: string,
+      keyword?: string,
+      page: number = 1,
+      limit: number = productsPerPage
+    ) => {
       try {
         setIsLoading(true);
-        const response = await apiProduct.getListAllProducts({
+        setError(null);
+
+        const params: Api.ProductParams = {
           skip: (page - 1) * limit,
           limit,
-        });
+        };
+
+        if (category && category !== "All") {
+          params.category = category;
+        }
+
+        if (keyword && keyword.trim()) {
+          params.keyword = keyword.trim();
+        }
+
+        const response = await apiProduct.getListAllProducts(params);
         setProducts(response.products || []);
         setTotalProducts(response.total || 0);
         setCurrentPage(page);
@@ -32,11 +49,13 @@ export const useProductForm = ({
         setError(
           error instanceof Error ? error.message : "An unknown error occurred"
         );
+        setProducts([]);
+        setTotalProducts(0);
       } finally {
         setIsLoading(false);
       }
     },
-    [currentPage, productsPerPage]
+    [productsPerPage]
   );
 
   const deleteProduct = useCallback(
@@ -46,7 +65,7 @@ export const useProductForm = ({
         await apiProduct.deleteProduct(productCode);
         await showToastAndWait("Đã xóa sản phẩm thành công", "success");
         // Refresh the products list after deletion
-        await fetchProducts(currentPage, productsPerPage);
+        await fetchProducts();
         return { success: true };
       } catch (error) {
         setError(
@@ -60,11 +79,36 @@ export const useProductForm = ({
         setIsDeleting(false);
       }
     },
-    [currentPage, productsPerPage, fetchProducts]
+    [fetchProducts]
   );
 
-  const refreshProducts = () => {
-    fetchProducts(currentPage, productsPerPage);
+  const refreshProducts = useCallback(
+    (category?: string, keyword?: string) => {
+      fetchProducts(category, keyword, currentPage, productsPerPage);
+    },
+    [fetchProducts, currentPage, productsPerPage]
+  );
+
+  const stats = {
+    total: products.length,
+    totalFromAPI: totalProducts,
+    showingAllProducts: products.length === totalProducts,
+    categories: products.map((product) => product.category),
+    categoriesCount: (() => {
+      const categoryList = [
+        "FOOD",
+        "SNACK",
+        "BEVERAGE",
+        "FROZEN",
+        "FRESH",
+        "OTHER",
+      ];
+      return products.reduce((acc, product) => {
+        const category = product.category;
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, Object.fromEntries(categoryList.map((cat) => [cat, 0])) as Record<string, number>);
+    })(),
   };
 
   return {
@@ -77,5 +121,6 @@ export const useProductForm = ({
     fetchProducts,
     refreshProducts,
     deleteProduct,
+    stats,
   };
 };

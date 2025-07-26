@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { apiProduct } from "../src/api/apiServer";
 import { useToastQueue } from "../src/utils/showToast";
 

@@ -107,3 +107,14 @@ export const compareImageWithAi = async (
   });
   return response.data;
 };
+
+export const inspectionExportExcel = async (
+  productCode: string
+): Promise<any> => {
+  const response = await request({
+    url: `/inspections/export?product_code=${productCode}`,
+    method: "GET",
+    responseType: "blob",
+  });
+  return response;
+};

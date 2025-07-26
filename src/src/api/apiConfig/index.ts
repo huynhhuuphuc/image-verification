@@ -48,7 +48,7 @@ axiosInstance.interceptors.response.use(
 
     // Handle binary stream data (file downloads, etc.)
     if (response.request.responseType === "blob") {
-      return { status: "success", data: response.data, message: "success" };
+      return response;
     }
 
     // Handle response codes and errors uniformly

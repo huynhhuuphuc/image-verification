@@ -22,6 +22,7 @@ import {
   getInspectionByInspectionCode,
   getDetailInspection,
   compareImageWithAi,
+  inspectionExportExcel,
 } from "../src/api/apiServer/apiProduct";
 import { isInspectionPassed } from "../src/utils/validation";
 import InspectionDetailModal from "../components/InspectionDetailModal";
@@ -45,7 +46,6 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   onToggleSidebar,
 }) => {
   const { productCode } = useParams();
-  console.log("productCode", productCode);
   const [product, setProduct] = useState<Api.ProductProps | null>(null);
   const [inspectionsCode, setInspectionsCode] = useState<Api.InspectionProps[]>(
     []
@@ -63,32 +63,22 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       if (!productCode) {
-        console.log("No product ID provided");
         return;
       }
-
-      console.log("Fetching data for product ID:", productCode);
 
       try {
         setLoading(true);
         setError(null);
 
         // Fetch product details by product code
-        console.log("Calling getProductByProductCode with ID:", productCode);
         const productData = await getProductByProductCode(productCode);
-        console.log("Product data received:", productData);
         setProduct(productData);
 
         // Fetch inspection history for this product
-        console.log(
-          "Calling getInspectionByInspectionCode for product:",
-          productCode
-        );
         try {
           const inspectionData = (await getInspectionByInspectionCode(
             productCode
           )) as any;
-          console.log("Inspection history received:", inspectionData);
 
           // Handle API response format - extract inspections array from response
           if (
@@ -96,20 +86,12 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
             inspectionData.inspections &&
             Array.isArray(inspectionData.inspections)
           ) {
-            console.log(
-              "Processed inspection history for product:",
-              inspectionData.inspections
-            );
             setInspectionsCode(inspectionData.inspections);
           } else {
             console.log("No inspection history found for product");
             setInspectionsCode([]);
           }
         } catch (inspectionError) {
-          console.log(
-            "No inspection history found for this product or API error:",
-            inspectionError
-          );
           setInspectionsCode([]);
         }
       } catch (err) {
@@ -186,7 +168,6 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
     // Call API with all files at once
     try {
       const apiResponse = await compareImageWithAi(productCode, filesArray);
-      console.log("Upload response:", apiResponse);
 
       setUploadedImages((prev) =>
         prev.map((img) => {
@@ -213,7 +194,6 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
       // If any files were uploaded successfully, refresh the inspection history
       if (apiResponse.total_uploaded > 0) {
-        console.log("Refreshing inspection history...");
         try {
           const inspectionData = (await getInspectionByInspectionCode(
             productCode
@@ -225,13 +205,9 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
             Array.isArray(inspectionData.inspections)
           ) {
             setInspectionsCode(inspectionData.inspections);
-            console.log(
-              "Inspection history refreshed:",
-              inspectionData.inspections
-            );
           }
         } catch (refreshError) {
-          console.log("Could not refresh inspection history:", refreshError);
+          console.error("Could not refresh inspection history:", refreshError);
         }
       }
     } catch (error) {
@@ -253,94 +229,37 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
   const handleInspectionClick = async (inspectionCode: string) => {
     try {
-      console.log("Fetching detailed inspection for code:", inspectionCode);
       const detailedInspection = await getDetailInspection(inspectionCode);
-      console.log("Detailed inspection received:", detailedInspection);
       setSelectedInspection(detailedInspection);
     } catch (error) {
       console.error("Error fetching inspection details:", error);
     }
   };
 
-  const exportToExcel = () => {
-    // Combine existing inspectionsCode and new uploaded images with results
-    const uploadedResults = uploadedImages
-      .filter((img) => img.uploadStatus === "success")
-      .map((img) => ({
-        "Product ID": product?.product_code || "",
-        "Product Name": product?.name || "",
-        "Test Time": img.uploadTime.toLocaleDateString("vi-VN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        "Test Conclusion": img.uploadMessage || "Uploaded successfully",
-        "Test Status": "Đã tải lên",
-        Tester: "Hệ thống AI",
-        Confidence: "95%",
-        Source: "Mới tải lên",
-      }));
+  const exportToExcel = async () => {
+    if (!productCode) return;
+    try {
+      const response = await inspectionExportExcel(productCode);
+      const blob = new Blob([response.data], {
+        type:
+          response.data.type ||
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
 
-    const existingInspections = inspectionsCode.map((inspection, index) => ({
-      "Product ID": product?.product_code || "",
-      "Product Name": product?.name || "",
-      "Test Time": new Date(inspection.created_at).toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      "Test Conclusion": inspection.ai_conclusion || "",
-      "Test Status": isInspectionPassed(inspection.status)
-        ? "Thành công"
-        : "Có lỗi",
-      Tester: inspection.inspector_email || "Hệ thống AI",
-      Confidence: "95%",
-      Source: "Lịch sử",
-    }));
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
 
-    const excelData = [...uploadedResults, ...existingInspections];
+      const fileName = `inspection-report-${productCode}.xlsx`;
 
-    const csvContent = [
-      // Headers
-      [
-        "Product ID",
-        "Product Name",
-        "Test Time",
-        "Test Conclusion",
-        "Test Status",
-        "Tester",
-        "Confidence",
-        "Source",
-      ],
-      // Data rows
-      ...excelData.map((row) => [
-        row["Product ID"],
-        row["Product Name"],
-        row["Test Time"],
-        row["Test Conclusion"],
-        row["Test Status"],
-        row["Tester"],
-        row["Confidence"],
-        row["Source"],
-      ]),
-    ]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
-    // Create and download file
-    const blob = new Blob(["\uFEFF" + csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `test-history-${product?.name || "product"}-${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
-    link.click();
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+    }
   };
 
   const formatDate = (dateString: string) => {

@@ -128,4 +128,26 @@ declare namespace Api {
     total_failed: number;
     inspection_records: string[];
   };
+  type DashboardParams = {
+    start_date: string;
+    end_date: string;
+    product_code: string;
+    keyword: string;
+    inspector_email: string;
+  };
+  type DashboardResponse = {
+    user: UserProps;
+    metrics: {
+      total_products: number;
+      total_inspections: number;
+      total_passed: number;
+      total_failed: number;
+    };
+    top_failed_products: {
+      product_code: string;
+      name: string;
+      category: string;
+      failed_count: number;
+    }[];
+  };
 }

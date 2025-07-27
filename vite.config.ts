@@ -11,7 +11,7 @@ export default defineConfig(({ command, mode }) => {
     plugins: [react()],
     server: {
       port: 3000,
-      allowedHosts: [".ngrok-free.app"],
+      allowedHosts: [".ngrok-free.app", "fe-952258726764.asia-southeast1.run.app"],
     },
     define: {
       // Make NODE_ENV available to the app

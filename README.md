@@ -202,3 +202,16 @@ Dự án này được phân phối dưới MIT License. Xem `LICENSE` để bi�
 ---
 
 Made with ❤️ for Vietnamese food production companies
+
+// day image len gcp
+
+gcloud auth login
+gcloud config set project your-project-id
+gcloud auth configure-docker asia-southeast1-docker.pkg.dev
+
+docker build -t asia-southeast1-docker.pkg.dev/cob-kb-demo/saigonfoos-be-dev-container/fe:latest .
+docker push asia-southeast1-docker.pkg.dev/cob-kb-demo/saigonfoos-be-dev-container/fe:latest
+
+```
+
+```

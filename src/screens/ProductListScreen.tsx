@@ -301,6 +301,10 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                       {product.name}
                     </h3>
 
+                    <p className="text-xs text-gray-500">
+                      {product.product_code}
+                    </p>
+
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0">
                       <span className="capitalize">
                         {
@@ -321,13 +325,6 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
                       <span className="text-xs text-gray-600">
                         Đang hoạt động
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-1 text-primary-600 group-hover:text-primary-700">
-                      <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="text-xs sm:text-sm font-medium">
-                        Xem chi tiết
                       </span>
                     </div>
                   </div>

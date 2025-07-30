@@ -627,6 +627,14 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600 text-xs sm:text-sm">
+                    Mã sản phẩm:
+                  </span>
+                  <span className="font-medium text-gray-900 text-xs sm:text-sm text-right">
+                    {product.product_code}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 text-xs sm:text-sm">
                     Tên sản phẩm:
                   </span>
                   <span className="font-medium text-gray-900 text-xs sm:text-sm text-right">

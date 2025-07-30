@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Clock,
   FileImage,
-  Zap,
   Menu,
   X,
   ZoomIn,

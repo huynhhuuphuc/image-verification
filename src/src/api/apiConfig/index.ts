@@ -9,9 +9,10 @@ import toast from "react-hot-toast";
 import { ACCESS_TOKEN } from "../../constants/cookie";
 import { getCookie } from "../../utils/cookie";
 import { eventBus } from "../../utils/eventBus";
+import config from "../../../config/environment";
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: config.API_BASE_URL,
   timeout: 60000,
   withCredentials: false,
   headers: {

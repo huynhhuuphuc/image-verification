@@ -4,10 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "cross-env NODE_ENV=development vite --mode development",
+    "dev:uat": "cross-env NODE_ENV=uat vite --mode uat",
+    "build": "cross-env NODE_ENV=production tsc && vite build --mode production",
+    "build:dev": "cross-env NODE_ENV=development tsc && vite build --mode development",
+    "build:uat": "cross-env NODE_ENV=uat tsc && vite build --mode uat",
+    "build:prod": "cross-env NODE_ENV=production tsc && vite build --mode production",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:dev": "cross-env NODE_ENV=development vite preview",
+    "preview:uat": "cross-env NODE_ENV=uat vite preview",
+    "preview:prod": "cross-env NODE_ENV=production vite preview"
   },
   "dependencies": {
     "axios": "^1.10.0",
@@ -29,6 +36,7 @@
     "@typescript-eslint/parser": "^6.10.0",
     "@vitejs/plugin-react": "^4.1.1",
     "autoprefixer": "^10.4.16",
+    "cross-env": "^10.0.0",
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",

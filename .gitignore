@@ -34,3 +34,6 @@ screenshot
 
 build
 .env
+
+.env.local
+.env.*.local

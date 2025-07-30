@@ -8,7 +8,6 @@ import {
   Menu,
   Trash2,
   Pencil,
-  MoreVertical,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -38,7 +37,6 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
   const {
     products,
     totalProducts,
-    currentPage,
     isLoading,
     isDeleting,
     error,

@@ -290,11 +290,24 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
                     className="block"
                   >
                     <div className="aspect-square rounded-lg overflow-hidden mb-3 sm:mb-4 bg-gray-100">
-                      <img
-                        src={product.sample_image.public_url}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {product?.avatar?.path &&
+                      product.avatar.path.startsWith("products/") ? (
+                        <img
+                          src={product.avatar.public_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                          <img
+                            src={
+                              "https://placehold.co/300x300?text=No+Image&font=roboto"
+                            }
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <h3 className="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors duration-200 text-sm sm:text-base leading-tight">

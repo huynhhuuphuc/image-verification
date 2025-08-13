@@ -368,16 +368,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ user, onToggleSidebar }) => {
                       <stat.icon className="w-4 h-4 sm:w-6 sm:h-6" />
                     </div>
                   </div>
-
-                  <div className="mt-3 sm:mt-4 flex items-center">
-                    <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-1" />
-                    <span className="text-xs sm:text-sm text-green-600 font-medium">
-                      {stats.totalInspections > 0 ? "+5.2%" : "N/A"}
-                    </span>
-                    <span className="text-xs sm:text-sm text-gray-500 ml-1 hidden sm:inline">
-                      so với tuần trước
-                    </span>
-                  </div>
                 </div>
               ))}
             </div>

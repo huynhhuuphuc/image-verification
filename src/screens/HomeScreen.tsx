@@ -4,7 +4,6 @@ import {
   Package,
   CheckCircle,
   AlertTriangle,
-  TrendingUp,
   Filter,
   Menu,
   X,

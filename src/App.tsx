@@ -5,7 +5,7 @@ import { UserFirebase } from "./types";
 
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "./src/firebase/firebase";
-import { getCookie, removeCookie, setCookie } from "./src/utils/cookie";
+// import { getCookie, removeCookie, setCookie } from "./src/utils/cookie";
 import {
   ACCESS_TOKEN,
   CURRENT_USER,
@@ -19,8 +19,8 @@ import GlobalToastProvider from "./GlobalToastProvider.tsx";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const token = getCookie(ACCESS_TOKEN);
-    const user = getCookie(CURRENT_USER);
+    const token = localStorage.getItem(ACCESS_TOKEN);
+    const user = localStorage.getItem(CURRENT_USER);
     return !!(token && user);
   });
 
@@ -28,9 +28,9 @@ const App: React.FC = () => {
 
   // Initialize user data from cookie
   const [currentUser, setCurrentUser] = useState<UserFirebase | null>(() => {
-    const savedUser = getCookie(CURRENT_USER);
-    console.log("Current user:", savedUser);
-    return savedUser || null;
+    const savedUser = localStorage.getItem(CURRENT_USER);
+    console.log("Current user:", JSON.parse(savedUser || "{}"));
+    return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -39,8 +39,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      const token = getCookie(ACCESS_TOKEN);
-      const user = getCookie(CURRENT_USER);
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      const user = localStorage.getItem(CURRENT_USER);
 
       const shouldBeAuthenticated = !!(token && user);
 
@@ -50,7 +50,7 @@ const App: React.FC = () => {
         if (!shouldBeAuthenticated) {
           setCurrentUser(null);
         } else if (user && !currentUser) {
-          setCurrentUser(user);
+          setCurrentUser(JSON.parse(user));
         }
       }
 
@@ -59,11 +59,11 @@ const App: React.FC = () => {
           const response = await currentUserApi();
 
           const updatedUser = {
-            ...user,
+            ...JSON.parse(user),
             apiUserData: response,
           };
           setCurrentUser(updatedUser);
-          setCookie(CURRENT_USER, updatedUser);
+          localStorage.setItem(CURRENT_USER, JSON.stringify(updatedUser));
         } catch (error) {
           console.error("Failed to refresh user data:", error);
         }
@@ -100,8 +100,8 @@ const App: React.FC = () => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user as unknown as UserFirebase;
 
-      setCookie(ACCESS_TOKEN, user.accessToken);
-      setCookie(REFRESH_TOKEN, user.stsTokenManager.refreshToken);
+      localStorage.setItem(ACCESS_TOKEN, user.accessToken);
+      localStorage.setItem(REFRESH_TOKEN, user.stsTokenManager.refreshToken);
 
       const response = await currentUserApi();
 
@@ -120,7 +120,7 @@ const App: React.FC = () => {
         apiUserData: response,
       };
       setCurrentUser(streamlinedUser as UserFirebase);
-      setCookie(CURRENT_USER, streamlinedUser);
+      localStorage.setItem(CURRENT_USER, JSON.stringify(streamlinedUser));
 
       toast.success("Đăng nhập thành công");
       setIsAuthenticated(true);
@@ -133,9 +133,9 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
     setCurrentUser(null);
 
-    removeCookie(ACCESS_TOKEN);
-    removeCookie(REFRESH_TOKEN);
-    removeCookie(CURRENT_USER);
+    localStorage.removeItem(ACCESS_TOKEN);
+    localStorage.removeItem(REFRESH_TOKEN);
+    localStorage.removeItem(CURRENT_USER);
   };
 
   const handleResetSessionExpired = () => {

@@ -7,7 +7,7 @@ import axios, {
 } from "axios";
 import toast from "react-hot-toast";
 import { ACCESS_TOKEN } from "../../constants/cookie";
-import { getCookie } from "../../utils/cookie";
+// import { getCookie } from "../../utils/cookie";
 import { eventBus } from "../../utils/eventBus";
 import config from "../../../config/environment";
 
@@ -29,7 +29,7 @@ axiosInstance.interceptors.request.use(
       config.params = { ...config.params, t };
     }
     // Append authorization token to headers
-    const token = getCookie(ACCESS_TOKEN);
+    const token = localStorage.getItem(ACCESS_TOKEN);
     config.headers = {
       Authorization: token ? `Bearer ${token}` : "",
       ...config.headers,

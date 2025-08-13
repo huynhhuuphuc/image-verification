@@ -15,7 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { CATEGORY_LABELS } from "../data/mockData";
 import { useProductForm } from "../hooks/useProductForm";
 import { useIsAdmin } from "../hooks/useIsAdmin";
-import { getCookie } from "../src/utils/cookie";
+// import { getCookie } from "../src/utils/cookie";
 import { CURRENT_USER } from "../src/constants/cookie";
 import RemoveProductModal from "../components/RemoveProductModal";
 
@@ -32,8 +32,8 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const currentUser = getCookie(CURRENT_USER);
-  const isAdmin = useIsAdmin(currentUser);
+  const currentUser = localStorage.getItem(CURRENT_USER);
+  const isAdmin = useIsAdmin(currentUser ? JSON.parse(currentUser) : null);
   const {
     products,
     totalProducts,
